@@ -345,7 +345,7 @@ async function loadCSV() {
   setStep('Chargement des données CLPE…', 2);
   const response = await fetch(CLPE_CSV_URL);
   if (!response.ok) throw new Error(`CSV CLPE → HTTP ${response.status}`);
-  const csvText = await response.text();
+  const csvText = (await response.text()).replace(/^\uFEFF/, '');
   
   // ✅ Suppression du BOM UTF-8 (\uFEFF) éventuel
   csvText = csvText.replace(/^\uFEFF/, '');
