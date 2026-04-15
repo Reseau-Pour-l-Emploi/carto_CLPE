@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Carte des Comités Locaux pour l’Emploi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- PapaParse pour lire le CSV -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+}
+
+/* Colonne gauche */
+#sidebar {
+    width: 280px;
+    padding: 15px;
+    background: #f5f5f5;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+}
+
+/* Carte */
+#map {
+    flex: 1;
+}
+
+/* Labels régions / départements */
+.region-label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #003366;
+    text-shadow: 0 0 3px white;
+}
+
+.dept-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #004c99;
+    text-shadow: 0 0 2px white;
+}
+</style>
+</head>
+
+<body>
+
+<div id="sidebar">
+    <h2>Comités Locaux pour l’Emploi</h2>
+    <p>Survolez un CLPE pour afficher son nom.</p>
+    <p>Zoom et déplacement possibles.</p>
+    <div id="legend"></div>
+</div>
+
+<div id="map"></div>
+
+<script>
+// ------------------------------------------------------------
+// 1. Initialisation de la carte Leaflet
+// ------------------------------------------------------------
+const map = L.map('map', {
+    minZoom: 5,
+    maxZoom: 18
+}).setView([46.6, 2.5], 6);
+
+// ------------------------------------------------------------
+// 2. Fond IGN via WMTS
+// ------------------------------------------------------------
+const ignKey = ""; // si tu as une clé, sinon accès libre sur couches ouvertes
+
+const wmtsUrl = "https://data.geopf.fr/wmts";
+const layerName = "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2";
+
+const ignLayer = L.tileLayer.wmts(wmtsUrl, {
+    layer: layerName,
+    tilematrixSet: "PM",
+    format: "image/png",
+    style: "normal",
+    attribution: "© IGN - GeoPlateforme"
+}).addTo(map);
+
+// ------------------------------------------------------------
+// 3. Chargement des référentiels Admin Express (IGN)
+// ------------------------------------------------------------
+const URL_REGIONS = "https://data.geopf.fr/annexes/geojson/adminexpress/regions.geojson";
+const URL_DEPTS   = "https://data.geopf.fr/annexes/geojson/adminexpress/departements.geojson";
+const URL_COM     = "https://data.geopf.fr/annexes/geojson/adminexpress/communes.geojson";
+
+// Stockage
+let communesGeo = null;
+let csvData = null;
+
+// ------------------------------------------------------------
+// 4. Chargement du CSV utilisateur
+// ------------------------------------------------------------
+Papa.parse("communes_clpe.csv", {
+    download: true,
+    header: true,
+    dynamicTyping: false,
+    complete: function(results) {
+        csvData = results.data;
+        loadGeoData();
+    }
+});
+
+// ------------------------------------------------------------
+// 5. Chargement des GeoJSON IGN
+// ------------------------------------------------------------
+async function loadGeoData() {
+    const [regions, departements, communes] = await Promise.all([
+        fetch(URL_REGIONS).then(r => r.json()),
+        fetch(URL_DEPTS).then(r => r.json()),
+        fetch(URL_COM).then(r => r.json())
+    ]);
+
+    communesGeo = communes;
+
+    drawRegions(regions);
+    drawDepartements(departements);
+    aggregateAndDrawCLPE();
+}
+
+// ------------------------------------------------------------
+// 6. Affichage des régions
+// ------------------------------------------------------------
+function drawRegions(regions) {
+    L.geoJSON(regions, {
+        style: {
+            color: "#003366",
+            weight: 2,
+            fillOpacity: 0
+        },
+        onEachFeature: (f, layer) => {
+            const center = layer.getBounds().getCenter();
+            L.marker(center, {
+                icon: L.divIcon({
+                    className: "region-label",
+                    html: f.properties.nom
+                })
+            }).addTo(map);
+        }
+    }).addTo(map);
+}
+
+// ------------------------------------------------------------
+// 7. Affichage des départements
+// ------------------------------------------------------------
+function drawDepartements(depts) {
+    L.geoJSON(depts, {
+        style: {
+            color: "#004c99",
+            weight: 1.2,
+            fillOpacity: 0
+        },
+        onEachFeature: (f, layer) => {
+            const center = layer.getBounds().getCenter();
+            L.marker(center, {
+                icon: L.divIcon({
+                    className: "dept-label",
+                    html: f.properties.nom
+                })
+            }).addTo(map);
+        }
+    }).addTo(map);
+}
+
+// ------------------------------------------------------------
+// 8. Agrégation des communes par CLPE
+// ------------------------------------------------------------
+function aggregateAndDrawCLPE() {
+    const mapCLPE = {};
+
+    // Associer chaque commune à son CLPE
+    csvData.forEach(row => {
+        const code = row.INSEE_COM;
+        const clpe = row.CLPE;
+
+        if (!mapCLPE[clpe]) mapCLPE[clpe] = [];
+
+        const match = communesGeo.features.find(f => f.properties.insee_com === code);
+        if (match) mapCLPE[clpe].push(match);
+    });
+
+    // Fusion géométrique (simplifiée : MultiPolygon)
+    const clpeLayers = [];
+
+    Object.entries(mapCLPE).forEach(([clpe, features]) => {
+        const merged = {
+            type: "Feature",
+            properties: { CLPE: clpe },
+            geometry: {
+                type: "MultiPolygon",
+                coordinates: features.flatMap(f =>
+                    f.geometry.type === "Polygon"
+                        ? [f.geometry.coordinates]
+                        : f.geometry.coordinates
+                )
+            }
+        };
+        clpeLayers.push(merged);
+    });
+
+    drawCLPE(clpeLayers);
+}
+
+// ------------------------------------------------------------
+// 9. Coloration intelligente des CLPE
+// ------------------------------------------------------------
+function generateBluePalette(n) {
+    const colors = [];
+    for (let i = 0; i < n; i++) {
+        const hue = 210; // bleu
+        const sat = 40 + (i * 40 / n);
+        const light = 40 + (i * 40 / n);
+        colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
+    }
+    return colors;
+}
+
+function drawCLPE(clpeFeatures) {
+    const colors = generateBluePalette(clpeFeatures.length);
+    let i = 0;
+
+    clpeFeatures.forEach(f => {
+        const color = colors[i++];
+
+        L.geoJSON(f, {
+            style: {
+                color: "#003366",
+                weight: 1.5,
+                fillColor: color,
+                fillOpacity: 0.6
+            },
+            onEachFeature: (feat, layer) => {
+                layer.bindTooltip(feat.properties.CLPE, {
+                    sticky: true
+                });
+            }
+        }).addTo(map);
+    });
+}
+</script>
+
+</body>
+</html>
