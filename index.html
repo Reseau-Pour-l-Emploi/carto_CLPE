@@ -1,985 +1,800 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carte des Comités Locaux pour l'Emploi — France Travail</title>
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carte des CLPE – France</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    /* ── Reset & Base ────────────────────────────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --ft-navy:    #003189;
-      --ft-blue:    #0e4da4;
-      --ft-mid:     #2166b8;
-      --ft-sky:     #5094d4;
-      --ft-pale:    #a8cbee;
-      --ft-lighter: #d4e8f8;
-      --ft-bg:      #f0f4fb;
-      --ft-text:    #0b1f3e;
-      --ft-muted:   #4a6080;
-      --ft-border:  #bdd0e8;
-      --ui-white:   #ffffff;
-      --header-h:   56px;
-      --font:       'Barlow', system-ui, sans-serif;
-      --font-cond:  'Barlow Condensed', 'Barlow', sans-serif;
-      --shadow-sm:  0 2px 8px rgba(0,31,80,.12);
-      --shadow-md:  0 4px 20px rgba(0,31,80,.18);
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #0f172a;
+      overflow: hidden;
     }
 
-    html, body { height: 100%; font-family: var(--font); background: var(--ft-bg); color: var(--ft-text); }
+    /* ── MAP ── */
+    #map { position: fixed; inset: 0; z-index: 1; }
 
-    /* ── Layout ──────────────────────────────────────────────────── */
-    #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-    /* ── Header ──────────────────────────────────────────────────── */
-    #header {
-      height: var(--header-h);
-      background: var(--ft-navy);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 16px;
-      flex-shrink: 0;
-      box-shadow: 0 2px 12px rgba(0,0,0,.35);
-      z-index: 1000;
-    }
-
-    .header-logo {
-      width: 36px; height: 36px;
-      background: var(--ui-white);
-      border-radius: 6px;
+    /* ── LOADING OVERLAY ── */
+    #overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+      transition: opacity 0.6s ease;
     }
-    .header-logo svg { width: 24px; height: 24px; }
+    #overlay.hide { opacity: 0; pointer-events: none; }
 
-    .header-title {
-      font-family: var(--font-cond);
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--ui-white);
-      letter-spacing: .3px;
-      line-height: 1.15;
-    }
-    .header-subtitle {
-      font-size: 11px;
-      font-weight: 400;
-      color: rgba(255,255,255,.6);
-      letter-spacing: .5px;
-      text-transform: uppercase;
+    .ov-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(147, 197, 253, 0.2);
+      border-radius: 16px;
+      padding: 2.5rem 3rem;
+      min-width: 380px;
+      max-width: 480px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
     }
 
-    .header-sep { flex: 1; }
-
-    #header-stats {
-      display: flex; gap: 20px; align-items: center;
+    .ov-flag {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 1.8rem;
     }
-    .stat-chip {
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.2);
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 12px;
-      color: rgba(255,255,255,.9);
-      font-weight: 600;
-      font-family: var(--font-cond);
-      letter-spacing: .3px;
-      transition: opacity .3s;
+    .ov-flag-stripes { display: flex; border-radius: 4px; overflow: hidden; height: 22px; width: 34px; flex-shrink: 0; }
+    .ov-flag-stripes span { flex: 1; }
+    .ov-flag-stripes span:nth-child(1) { background: #002395; }
+    .ov-flag-stripes span:nth-child(2) { background: #fff; }
+    .ov-flag-stripes span:nth-child(3) { background: #ED2939; }
+    .ov-title {
+      font-size: 1.25rem; font-weight: 700; color: #f0f9ff;
+      letter-spacing: 0.01em;
     }
-    .stat-chip.hidden { opacity: 0; pointer-events: none; }
-
-    /* ── Map container ───────────────────────────────────────────── */
-    #map-wrap { flex: 1; position: relative; overflow: hidden; }
-    #map      { position: absolute; inset: 0; }
-
-    /* ── Loading overlay ─────────────────────────────────────────── */
-    #loading-overlay {
-      position: absolute; inset: 0; z-index: 9000;
-      background: rgba(240,244,251,.94);
-      display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(3px);
-      transition: opacity .4s;
-    }
-    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
-
-    .loading-box {
-      background: var(--ui-white);
-      border-radius: 14px;
-      padding: 36px 44px;
-      box-shadow: var(--shadow-md);
-      text-align: center;
-      max-width: 380px;
-      width: 90%;
-    }
-    .loading-box .brand {
-      font-family: var(--font-cond);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--ft-navy);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .loading-box .brand::before,
-    .loading-box .brand::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--ft-border);
+    .ov-sub {
+      font-size: 0.78rem; color: #93c5fd; font-weight: 500;
+      letter-spacing: 0.06em; text-transform: uppercase;
     }
 
-    .spinner-ring {
-      width: 52px; height: 52px;
-      border: 4px solid var(--ft-lighter);
-      border-top-color: var(--ft-mid);
-      border-right-color: var(--ft-sky);
-      border-radius: 50%;
-      animation: spin .9s cubic-bezier(.4,0,.2,1) infinite;
-      margin: 0 auto 18px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    #loading-step {
-      font-size: 14px;
-      color: var(--ft-muted);
-      font-weight: 400;
-      min-height: 20px;
-      transition: opacity .2s;
-    }
-    .loading-box .progress-dots {
-      display: flex; justify-content: center; gap: 6px; margin-top: 16px;
-    }
-    .progress-dots span {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--ft-pale);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    .progress-dots span:nth-child(2) { animation-delay: .2s; }
-    .progress-dots span:nth-child(3) { animation-delay: .4s; }
-    @keyframes pulse { 0%,80%,100%{transform:scale(.7);opacity:.4} 40%{transform:scale(1);opacity:1} }
-
-    .loading-box.is-error .spinner-ring { display: none; }
-    .loading-box.is-error .progress-dots { display: none; }
-    .error-icon { font-size: 42px; margin-bottom: 12px; }
-    .error-msg  { font-size: 14px; color: #c0392b; font-weight: 600; margin-bottom: 8px; }
-    .error-hint { font-size: 12px; color: var(--ft-muted); line-height: 1.5; }
-    .retry-btn {
-      margin-top: 16px;
-      background: var(--ft-mid);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 20px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .2s;
-    }
-    .retry-btn:hover { background: var(--ft-navy); }
-
-    /* ── Info panel (hover CLPE) ─────────────────────────────────── */
-    #info-panel {
-      position: absolute;
-      bottom: 28px; left: 16px;
-      z-index: 800;
-      background: var(--ui-white);
-      border-radius: 10px;
-      box-shadow: var(--shadow-md);
-      padding: 14px 18px;
-      min-width: 220px; max-width: 320px;
-      border-left: 4px solid var(--ft-mid);
-      transform: translateY(8px);
-      opacity: 0;
-      transition: opacity .25s, transform .25s;
-      pointer-events: none;
-    }
-    #info-panel.visible { opacity: 1; transform: translateY(0); }
-
-    .info-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--ft-muted);
-      margin-bottom: 6px;
-    }
-    .info-name {
-      font-family: var(--font-cond);
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--ft-navy);
-      line-height: 1.25;
-    }
-    .info-count {
-      font-size: 12px;
-      color: var(--ft-muted);
-      margin-top: 4px;
-    }
-    .info-swatch {
-      display: inline-block;
-      width: 12px; height: 12px;
-      border-radius: 3px;
-      margin-right: 5px;
-      vertical-align: middle;
+    .ov-step {
+      font-size: 0.82rem; color: #7dd3fc;
+      margin-bottom: 1rem; min-height: 1.2em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    /* ── Leaflet label divIcons ──────────────────────────────────── */
-    .lbl-region {
-      pointer-events: none;
-      text-align: center;
-      transform: translate(-50%, -50%);
+    .ov-track {
+      background: rgba(255,255,255,0.07);
+      border-radius: 9999px; height: 6px; overflow: hidden; margin-bottom: 0.8rem;
     }
-    .lbl-region span {
-      display: inline-block;
-      font-family: var(--font-cond);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .8px;
-      text-transform: uppercase;
-      color: var(--ft-navy);
-      white-space: nowrap;
-      text-shadow:
-        0 0 4px #fff, 0 0 4px #fff, 0 0 4px #fff,
-        1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+    .ov-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #2563eb, #60a5fa, #38bdf8);
+      border-radius: 9999px; width: 0%;
+      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
     }
 
-    .lbl-dep {
-      pointer-events: none;
-      text-align: center;
-      transform: translate(-50%, -50%);
+    .ov-hint {
+      font-size: 0.72rem; color: #475569;
+      display: flex; align-items: center; gap: 6px;
     }
-    .lbl-dep span {
-      display: inline-block;
-      font-family: var(--font-cond);
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: .5px;
-      color: #2a4d75;
-      white-space: nowrap;
-      text-shadow:
-        0 0 3px rgba(255,255,255,.9), 0 0 3px rgba(255,255,255,.9),
-        0 0 3px rgba(255,255,255,.9);
-    }
+    .ov-hint::before { content: 'ℹ'; font-size: 0.7rem; color: #3b82f6; }
 
-    /* ── Custom Leaflet Tooltip ──────────────────────────────────── */
-    .leaflet-tooltip.clpe-tip {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-    }
-    .clpe-tip-inner {
-      padding: 6px 11px;
-      border-radius: 6px;
-      font-family: var(--font-cond);
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid rgba(0,0,0,.1);
-      letter-spacing: .2px;
-    }
-
-    /* ── Attribution tweak ───────────────────────────────────────── */
-    .leaflet-control-attribution {
-      font-size: 10px !important;
-      background: rgba(255,255,255,.75) !important;
-    }
-
-    /* ── Zoom control ────────────────────────────────────────────── */
-    .leaflet-control-zoom a {
-      font-family: var(--font-cond) !important;
-      font-weight: 700 !important;
-      color: var(--ft-navy) !important;
-    }
-
-    /* ── Legend ──────────────────────────────────────────────────── */
+    /* ── LEGEND ── */
     #legend {
-      position: absolute;
-      top: 16px; right: 16px;
-      z-index: 800;
-      background: var(--ui-white);
-      border-radius: 10px;
-      box-shadow: var(--shadow-md);
-      padding: 12px 16px;
-      font-size: 12px;
-      color: var(--ft-text);
-      min-width: 160px;
+      position: absolute; top: 14px; right: 14px; z-index: 1000;
+      background: rgba(255,255,255,0.97);
+      border-radius: 12px; padding: 14px 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      font-size: 12px; min-width: 160px;
+      border: 1px solid rgba(0,0,0,0.06);
     }
-    .legend-title {
-      font-family: var(--font-cond);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .8px;
-      text-transform: uppercase;
-      color: var(--ft-muted);
-      margin-bottom: 10px;
+    #legend h4 {
+      font-size: 12px; font-weight: 700; color: #1e3a8a;
+      margin-bottom: 10px; padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 6px;
     }
-    .legend-row {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .leg-sw {
+      width: 22px; height: 13px; border-radius: 3px; flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.12);
     }
-    .legend-line {
-      width: 24px; height: 3px;
-      border-radius: 2px;
-      flex-shrink: 0;
+    .leg-lbl { color: #374151; font-size: 11px; }
+
+    /* ── DOM PANEL ── */
+    #dom-panel {
+      position: absolute; bottom: 40px; left: 10px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 4px;
     }
-    .legend-dash {
-      width: 24px; height: 2px;
-      border-radius: 1px;
-      flex-shrink: 0;
-      background: repeating-linear-gradient(to right, #5094d4 0 4px, transparent 4px 7px);
+    .inset-card {
+      background: white; border: 1.5px solid #bfdbfe;
+      border-radius: 7px; overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
     }
+    .inset-hdr {
+      background: linear-gradient(90deg, #1d4ed8, #2563eb);
+      color: white; font-size: 9px; font-weight: 700;
+      padding: 2px 6px; text-align: center;
+      letter-spacing: 0.07em; text-transform: uppercase;
+    }
+    .inset-body { width: 130px; height: 76px; }
+
+    /* ── LABEL MARKERS ── */
+    .lbl-marker { background: transparent !important; border: none !important; }
+    .lbl-region {
+      font-size: 11px; font-weight: 700; color: #1e3a8a;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.9), -1px -1px 0 rgba(255,255,255,0.9),
+                   1px -1px 0 rgba(255,255,255,0.9), -1px 1px 0 rgba(255,255,255,0.9);
+      white-space: nowrap; pointer-events: none;
+      text-transform: uppercase; letter-spacing: 0.07em;
+    }
+    .lbl-dept {
+      font-size: 9px; font-weight: 600; color: #475569;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.85), -1px -1px 0 rgba(255,255,255,0.85);
+      white-space: nowrap; pointer-events: none;
+    }
+
+    /* ── CLPE TOOLTIP ── */
+    .leaflet-tooltip.tt-clpe {
+      background: rgba(30, 58, 138, 0.93);
+      color: white; border: 1px solid rgba(147,197,253,0.4);
+      border-radius: 6px; padding: 5px 11px;
+      font-size: 12px; font-weight: 600;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      max-width: 300px;
+    }
+    .leaflet-tooltip.tt-clpe::before { border-top-color: rgba(30,58,138,0.93); }
+
+    /* ── CTRL BUTTONS ── */
+    #map-ctrl {
+      position: absolute; bottom: 40px; right: 14px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .ctrl-btn {
+      background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;
+      border-radius: 8px; padding: 7px 11px;
+      font-size: 11px; font-weight: 600; color: #1e3a8a;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, box-shadow 0.15s;
+      font-family: inherit; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .ctrl-btn:hover { background: #eff6ff; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
+    .ctrl-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
+
+    /* ── STATS BAR ── */
+    #stats-bar {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; background: rgba(255,255,255,0.97);
+      border-radius: 10px; padding: 7px 18px;
+      display: flex; gap: 20px; align-items: center;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.12);
+      border: 1px solid rgba(0,0,0,0.06);
+      font-size: 11px; font-weight: 600;
+      display: none; /* shown after load */
+    }
+    .stat-item { display: flex; align-items: center; gap: 6px; color: #475569; }
+    .stat-num { color: #1d4ed8; font-size: 14px; font-weight: 700; }
+
+    /* Leaflet overrides */
+    .leaflet-control-attribution { font-size: 9px; }
   </style>
 </head>
 <body>
 
-<div id="app">
-  <!-- Header -->
-  <header id="header">
-    <div class="header-logo" title="France Travail">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="4" width="18" height="13" rx="2" fill="#003189"/>
-        <rect x="6" y="7" width="5" height="1.5" rx=".75" fill="white"/>
-        <rect x="6" y="10" width="8" height="1.5" rx=".75" fill="white"/>
-        <rect x="6" y="13" width="6" height="1.5" rx=".75" fill="white"/>
-        <rect x="9" y="19" width="6" height="1.5" rx=".75" fill="#003189"/>
-        <rect x="11" y="17" width="2" height="2" rx=".5" fill="#003189"/>
-      </svg>
-    </div>
-    <div>
-      <div class="header-title">Comités Locaux pour l'Emploi</div>
-      <div class="header-subtitle">Carte interactive · France métropolitaine &amp; DOM</div>
-    </div>
-    <div class="header-sep"></div>
-    <div id="header-stats">
-      <div class="stat-chip hidden" id="chip-clpe">— CLPE</div>
-      <div class="stat-chip hidden" id="chip-com">— communes</div>
-    </div>
-  </header>
-
-  <!-- Map -->
-  <div id="map-wrap">
-    <div id="map"></div>
-
-    <!-- Loading overlay -->
-    <div id="loading-overlay">
-      <div class="loading-box" id="loading-box">
-        <div class="brand">France Travail</div>
-        <div class="spinner-ring"></div>
-        <div id="loading-step">Initialisation…</div>
-        <div class="progress-dots">
-          <span></span><span></span><span></span>
-        </div>
+<!-- ═══════════════ LOADING OVERLAY ═══════════════ -->
+<div id="overlay">
+  <div class="ov-card">
+    <div class="ov-flag">
+      <div class="ov-flag-stripes"><span></span><span></span><span></span></div>
+      <div>
+        <div class="ov-title">Carte des CLPE</div>
+        <div class="ov-sub">Comités Locaux Pour l'Emploi</div>
       </div>
     </div>
-
-    <!-- Info panel -->
-    <div id="info-panel">
-      <div class="info-label">Comité Local pour l'Emploi</div>
-      <div class="info-name" id="info-name">—</div>
-      <div class="info-count" id="info-count"></div>
-    </div>
-
-    <!-- Legend -->
-    <div id="legend">
-      <div class="legend-title">Légende</div>
-      <div class="legend-row">
-        <div style="width:24px;height:16px;border-radius:3px;background:linear-gradient(135deg,#6aa8e3,#1f65ad);flex-shrink:0"></div>
-        <span>Zone CLPE</span>
-      </div>
-      <div class="legend-row">
-        <div class="legend-line" style="background:#a8cbee;"></div>
-        <span style="color:#4a6080;font-size:11px">Communes</span>
-      </div>
-      <div class="legend-row">
-        <div class="legend-line" style="background:#2166b8;height:2px;"></div>
-        <span style="color:#4a6080;font-size:11px">Départements</span>
-      </div>
-      <div class="legend-row">
-        <div class="legend-line" style="background:#003189;height:3px;"></div>
-        <span style="color:#4a6080;font-size:11px">Régions</span>
-      </div>
+    <div id="ov-step" class="ov-step">Initialisation…</div>
+    <div class="ov-track"><div id="ov-bar" class="ov-bar"></div></div>
+    <div class="ov-hint">
+      Données : ADMIN-EXPRESS-COG-CARTO (IGN) · Fond WMTS Géoportail
     </div>
   </div>
 </div>
 
-<!-- Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- ═══════════════ MAP ═══════════════ -->
+<div id="map"></div>
+
+<!-- ═══════════════ DOM INSETS ═══════════════ -->
+<div id="dom-panel">
+  <div class="inset-card"><div class="inset-hdr">Guadeloupe</div><div class="inset-body" id="map-971"></div></div>
+  <div class="inset-card"><div class="inset-hdr">Martinique</div><div class="inset-body" id="map-972"></div></div>
+  <div class="inset-card"><div class="inset-hdr">Guyane</div>    <div class="inset-body" id="map-973"></div></div>
+  <div class="inset-card"><div class="inset-hdr">La Réunion</div><div class="inset-body" id="map-974"></div></div>
+  <div class="inset-card"><div class="inset-hdr">Mayotte</div>   <div class="inset-body" id="map-976"></div></div>
+</div>
+
+<!-- ═══════════════ LEGEND ═══════════════ -->
+<div id="legend">
+  <h4>🗂 Légende</h4>
+  <div class="leg-row"><div class="leg-sw" style="background:#bfdbfe;border-color:#1d4ed8;border-width:1.5px"></div><span class="leg-lbl">CLPE (polygone)</span></div>
+  <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#64748b;border-width:1.5px"></div><span class="leg-lbl">Département</span></div>
+  <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#1e3a8a;border-width:2px"></div><span class="leg-lbl">Région</span></div>
+  <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#cbd5e1;border-width:0.5px"></div><span class="leg-lbl">Commune (zoom ≥ 10)</span></div>
+</div>
+
+<!-- ═══════════════ LAYER CONTROLS ═══════════════ -->
+<div id="map-ctrl">
+  <button class="ctrl-btn active" id="btn-clpe"    onclick="toggleLayer('clpe')">CLPE</button>
+  <button class="ctrl-btn active" id="btn-dept"    onclick="toggleLayer('dept')">Départements</button>
+  <button class="ctrl-btn active" id="btn-region"  onclick="toggleLayer('region')">Régions</button>
+  <button class="ctrl-btn active" id="btn-labels"  onclick="toggleLayer('labels')">Étiquettes</button>
+</div>
+
+<!-- ═══════════════ STATS ═══════════════ -->
+<div id="stats-bar">
+  <div class="stat-item"><span class="stat-num" id="stat-clpe">–</span> CLPE</div>
+  <div class="stat-item"><span class="stat-num" id="stat-comm">–</span> communes</div>
+  <div class="stat-item"><span class="stat-num" id="stat-assoc">–</span> communes assoc.</div>
+</div>
+
+<!-- ═══════════════ LIBRARIES ═══════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://unpkg.com/topojson-server@3.0.1/dist/topojson-server.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
 <script>
 'use strict';
 
-/* ════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    CONFIGURATION
-   ════════════════════════════════════════════════════════════════════ */
-
+══════════════════════════════════════════════════════ */
 const CFG = {
-  CSV_PATH:  'communes_clpe.csv',
-  TOPO_PATH: 'topo_communes.json',
-  DEP_PATH:  'departements.geojson',
-  REG_PATH:  'regions.geojson',
+  wfs: 'https://data.geopf.fr/wfs/ows',
+  wmts: 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
+       + '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png'
+       + '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+  pageSize: 2000,
 
-  // Centre et zoom initial (métropole France)
-  MAP_CENTER: [46.5, 2.3],
-  MAP_ZOOM:   6,
+  // ADMIN-EXPRESS-COG-CARTO layers
+  layers: {
+    commune : 'ADMINEXPRESS-COG-CARTO.LATEST:commune',
+    assoc   : 'ADMINEXPRESS-COG-CARTO.LATEST:commune_associee_ou_deleguee',
+    dept    : 'ADMINEXPRESS-COG-CARTO.LATEST:departement',
+    region  : 'ADMINEXPRESS-COG-CARTO.LATEST:region',
+  },
 
-  // Opacité des polygones CLPE
-  FILL_OPACITY:         0.62,
-  FILL_OPACITY_HOVER:   0.82,
-
-  // Palette de bleus pour le coloriage (8 couleurs → évite les conflits de carte planaire)
-  BLUE_PALETTE: [
-    '#d4e8f9',  // 0 – très clair
-    '#a2cdee',  // 1 – clair
-    '#6aa8e3',  // 2 – ciel
-    '#3d85cc',  // 3 – moyen
-    '#1f65ad',  // 4 – bleu France Travail
-    '#0d4a8f',  // 5 – foncé
-    '#4d96d6',  // 6 – variante ciel
-    '#215b9e',  // 7 – variante foncé
+  // 6 harmonious blue shades (light → dark) for graph-coloring
+  blues: [
+    '#dbeafe', // 0 – très clair
+    '#93c5fd', // 1 – clair
+    '#60a5fa', // 2 – moyen clair
+    '#3b82f6', // 3 – moyen
+    '#1d4ed8', // 4 – soutenu
+    '#1e40af', // 5 – foncé
   ],
 
-  // Niveaux de zoom pour afficher les labels
-  ZOOM_SHOW_REG: 5,
-  ZOOM_SHOW_DEP: 7,
+  // CLPE border stroke on each shade
+  blueStroke: [
+    '#2563eb','#1d4ed8','#1e40af','#1e3a8a','#172554','#0f1d3d',
+  ],
+
+  // DOM: [[minLat, minLng], [maxLat, maxLng]] for Leaflet fitBounds
+  dom: [
+    { id:'971', name:'Guadeloupe',  bounds:[[15.78,-62.05],[16.62,-60.98]] },
+    { id:'972', name:'Martinique',  bounds:[[14.36,-61.28],[14.89,-60.79]] },
+    { id:'973', name:'Guyane',      bounds:[[2.08, -54.62],[5.85, -51.61]] },
+    { id:'974', name:'La Réunion',  bounds:[[-21.43,55.20],[-20.85,55.87]] },
+    { id:'976', name:'Mayotte',     bounds:[[-13.08,45.00],[-12.62,45.37]] },
+  ],
 };
 
-/* ════════════════════════════════════════════════════════════════════
-   ÉTAT GLOBAL
-   ════════════════════════════════════════════════════════════════════ */
-
-let map;
-let clpeGeoLayer   = null;
-let labelMarkers   = { reg: [], dep: [] };
-let activeLayer    = null;
-
-/* ════════════════════════════════════════════════════════════════════
-   UTILITAIRES UI
-   ════════════════════════════════════════════════════════════════════ */
-
-function setLoadingStep(msg) {
-  const el = document.getElementById('loading-step');
-  if (el) el.textContent = msg;
+/* ══════════════════════════════════════════════════════
+   PROGRESS UI
+══════════════════════════════════════════════════════ */
+function setStep(msg, pct) {
+  document.getElementById('ov-step').textContent = msg;
+  if (pct !== undefined)
+    document.getElementById('ov-bar').style.width = Math.min(100, pct) + '%';
+}
+function hideOverlay() {
+  const el = document.getElementById('overlay');
+  el.classList.add('hide');
+  setTimeout(() => el.style.display = 'none', 700);
+  document.getElementById('stats-bar').style.display = 'flex';
 }
 
-function hideLoading() {
-  const el = document.getElementById('loading-overlay');
-  if (el) { el.classList.add('hidden'); }
+/* ══════════════════════════════════════════════════════
+   WFS FETCHER (paginated)
+══════════════════════════════════════════════════════ */
+async function fetchWFSPage(typeName, startIndex) {
+  const url = new URL(CFG.wfs);
+  const p = url.searchParams;
+  p.set('SERVICE', 'WFS'); p.set('VERSION', '2.0.0');
+  p.set('REQUEST', 'GetFeature'); p.set('typeName', typeName);
+  p.set('outputFormat', 'application/json');
+  p.set('COUNT', CFG.pageSize); p.set('STARTINDEX', startIndex);
+  const r = await fetch(url.toString());
+  if (!r.ok) throw new Error(`WFS ${typeName} → HTTP ${r.status}`);
+  return r.json();
 }
 
-function showError(title, hint) {
-  const box = document.getElementById('loading-box');
-  if (!box) return;
-  box.classList.add('is-error');
-  box.innerHTML = `
-    <div class="brand">France Travail</div>
-    <div class="error-icon">⚠️</div>
-    <div class="error-msg">${title}</div>
-    <div class="error-hint">${hint}</div>
-    <button class="retry-btn" onclick="location.reload()">Réessayer</button>
-  `;
-}
-
-function updateStats(nbClpe, nbCom) {
-  const c1 = document.getElementById('chip-clpe');
-  const c2 = document.getElementById('chip-com');
-  if (c1) { c1.textContent = `${nbClpe} CLPE`; c1.classList.remove('hidden'); }
-  if (c2) { c2.textContent = `${nbCom.toLocaleString('fr-FR')} communes`; c2.classList.remove('hidden'); }
-}
-
-function showInfoPanel(name, count, color) {
-  const panel = document.getElementById('info-panel');
-  const nameEl = document.getElementById('info-name');
-  const cntEl  = document.getElementById('info-count');
-  if (!panel) return;
-  panel.style.borderLeftColor = color || 'var(--ft-mid)';
-  nameEl.textContent = name;
-  cntEl.innerHTML    = `<span class="info-swatch" style="background:${color||'#2166b8'}"></span>${count} commune${count>1?'s':''}`;
-  panel.classList.add('visible');
-}
-
-function hideInfoPanel() {
-  const panel = document.getElementById('info-panel');
-  if (panel) panel.classList.remove('visible');
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   PARSING CSV
-   ════════════════════════════════════════════════════════════════════ */
-
-/**
- * Parse le CSV et retourne Map<INSEE_COM → CLPE>.
- * Normalise les codes INSEE à 5 caractères.
- */
-function parseCSV(text) {
-  const result = Papa.parse(text, { header: true, skipEmptyLines: true });
-  const map = new Map();
-  for (const row of result.data) {
-    const inseeRaw = (row['INSEE_COM'] || row['insee_com'] || '').trim();
-    const clpe     = (row['CLPE']      || row['clpe']      || '').trim();
-    if (!inseeRaw || !clpe) continue;
-    const insee = inseeRaw.padStart(5, '0');
-    map.set(insee, clpe);
+async function fetchAllWFS(typeName, label, p0, p1) {
+  const all = []; let idx = 0; let total = null;
+  while (true) {
+    const n = all.length;
+    const frac = (total && total > 0) ? Math.min(n / total, 0.95) : (idx === 0 ? 0.05 : 0.5);
+    setStep(`${label}… (${n.toLocaleString('fr')} entités)`, p0 + (p1 - p0) * frac);
+    const data = await fetchWFSPage(typeName, idx);
+    if (!total && data.totalFeatures > 0) total = data.totalFeatures;
+    const feats = data.features || [];
+    all.push(...feats);
+    if (feats.length < CFG.pageSize) break;
+    idx += CFG.pageSize;
   }
+  return all;
+}
+
+/* ══════════════════════════════════════════════════════
+   CSV LOADER
+══════════════════════════════════════════════════════ */
+async function loadCSV() {
+  setStep('Chargement du fichier communes_clpe.csv…', 2);
+  const r = await fetch('communes_clpe.csv');
+  if (!r.ok) throw new Error(
+    'communes_clpe.csv introuvable. Placez-le à la racine du repo, à côté de index.html.');
+  const text = await r.text();
+  const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+  const map = {};
+  result.data.forEach(row => {
+    const code = String(row.INSEE_COM || '').trim().padStart(5,'0');
+    const clpe  = String(row.CLPE      || '').trim();
+    if (code && clpe) map[code] = clpe;
+  });
+  console.info(`[CSV] ${Object.keys(map).length} entrées chargées.`);
   return map;
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   CONSTRUCTION DES POLYGONES CLPE (topojson.merge)
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   BUILD FULL INSEE→CLPE MAPPING
+   (propagate from parent commune to associated communes)
+══════════════════════════════════════════════════════ */
+function buildFullMapping(csvMap, assocFeats) {
+  const full = { ...csvMap };
+  assocFeats.forEach(f => {
+    const p = f.properties || {};
+    const code   = String(p.INSEE_COM                || p.code || '').trim().padStart(5,'0');
+    const parent = String(p.INSEE_COM_RATTACHEMENT    || '').trim().padStart(5,'0');
+    if (code && !full[code] && parent && full[parent]) {
+      full[code] = full[parent];
+    }
+  });
+  return full;
+}
 
-/**
- * Regroupe les géométries du TopoJSON par CLPE, fusionne avec
- * topojson.merge et retourne la liste des Features GeoJSON.
- */
-function buildClpeFeatures(topo, csvMap) {
-  // Accès à la couche (le nom peut varier légèrement selon la version du script Python)
-  const objectKey = Object.keys(topo.objects)[0];
-  const communeGeoms = topo.objects[objectKey].geometries;
+/* ══════════════════════════════════════════════════════
+   GEOMETRY SANITIZER
+   (remove null geoms, flatten GeometryCollections)
+══════════════════════════════════════════════════════ */
+function sanitizeFeats(feats) {
+  return feats.filter(f => f.geometry).map(f => {
+    const g = f.geometry;
+    if (g.type === 'GeometryCollection') {
+      const polys = (g.geometries || [])
+        .filter(x => x.type === 'Polygon' || x.type === 'MultiPolygon')
+        .flatMap(x => x.type === 'MultiPolygon' ? x.coordinates : [x.coordinates]);
+      return { ...f, geometry: { type: 'MultiPolygon', coordinates: polys } };
+    }
+    return f;
+  }).filter(f => f.geometry.coordinates && f.geometry.coordinates.length);
+}
 
-  // Groupe : clpeName → [geometry objects from topology]
-  const clpeToGeoms = new Map();
-  let coveredCount = 0;
+/* ══════════════════════════════════════════════════════
+   DISSOLVE BY CLPE  (via TopoJSON – very fast)
+══════════════════════════════════════════════════════ */
+async function dissolveByClpe(commFeats, assocFeats, mapping) {
+  setStep('Conversion en topologie (TopoJSON)…', 68);
 
-  for (const geom of communeGeoms) {
-    if (!geom || !geom.properties) continue;
-    const insee = String(geom.properties.INSEE_COM || geom.properties.insee_com || '').padStart(5, '0');
-    const clpe  = csvMap.get(insee);
-    if (!clpe) continue;
-    coveredCount++;
-    if (!clpeToGeoms.has(clpe)) clpeToGeoms.set(clpe, []);
-    clpeToGeoms.get(clpe).push(geom);
+  // Combine and sanitize
+  const all = sanitizeFeats([...commFeats, ...assocFeats]);
+
+  // Tag each feature with its CLPE
+  all.forEach(f => {
+    const code = String(f.properties?.INSEE_COM || f.properties?.code || '').trim().padStart(5,'0');
+    f.properties._clpe = mapping[code] || 'Non assigné';
+  });
+
+  // Build TopoJSON topology (shared arc representation)
+  const topo = topojson.topology({ communes: { type: 'FeatureCollection', features: all } });
+
+  // Group topology geometries by CLPE
+  setStep('Regroupement des communes par CLPE…', 72);
+  const groups = {};
+  for (const geom of topo.objects.communes.geometries) {
+    if (!geom) continue;
+    const clpe = geom.properties?._clpe || 'Non assigné';
+    (groups[clpe] = groups[clpe] || []).push(geom);
   }
 
-  // Communes sans CLPE
-  const orphans = communeGeoms.length - coveredCount;
-  if (orphans > 0) console.warn(`⚠ ${orphans} commune(s) sans CLPE dans le CSV.`);
+  const clpeNames = Object.keys(groups);
+  const features  = [];
 
-  // Fusionne par CLPE
-  const features = [];
-  for (const [clpeName, geoms] of clpeToGeoms) {
-    // Filtre les géométries nulles
-    const valid = geoms.filter(g => g.type && g.type !== 'Point');
-    if (!valid.length) continue;
-    let merged;
+  // Merge each CLPE group (shared arcs → very fast)
+  for (let i = 0; i < clpeNames.length; i++) {
+    const clpe = clpeNames[i];
+    if (i % 30 === 0) {
+      setStep(`Fusion CLPE ${i + 1} / ${clpeNames.length}…`, 72 + (i / clpeNames.length) * 12);
+      await new Promise(r => setTimeout(r, 0)); // yield to browser
+    }
     try {
-      merged = topojson.merge(topo, valid);
-    } catch (err) {
-      console.warn(`topojson.merge échoué pour "${clpeName}":`, err);
-      continue;
+      const merged = topojson.merge(topo, groups[clpe]);
+      if (merged) {
+        features.push({ type: 'Feature', properties: { _clpe: clpe }, geometry: merged });
+      }
+    } catch (e) {
+      console.warn(`[dissolve] Erreur sur CLPE "${clpe}":`, e.message);
     }
-    if (!merged) continue;
-    features.push({
-      type: 'Feature',
-      geometry: merged,
-      properties: { CLPE: clpeName, count: valid.length },
-    });
   }
 
-  return { features, objectKey, communeGeoms };
+  return { topo, groups, fc: { type: 'FeatureCollection', features } };
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   ADJACENCE VIA LES ARCS TOPOLOGIQUES
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   ADJACENCY  (arc-based, O(total arcs) – no geometry ops)
+══════════════════════════════════════════════════════ */
+function buildAdjacency(topo, groups) {
+  setStep('Calcul du graphe d\'adjacence…', 85);
 
-/**
- * Récupère tous les indices d'arcs (valeur absolue) d'une géométrie.
- * TopoJSON: arc_index < 0 → arc inversé, index réel = ~arc_index.
- */
-function getAllArcIndices(geomObj) {
-  const indices = new Set();
-  function walk(node) {
-    if (!node || !Array.isArray(node)) return;
-    // Si le premier élément est un nombre : c'est une bague d'arcs
-    if (node.length > 0 && typeof node[0] === 'number') {
-      for (const idx of node) indices.add(idx < 0 ? ~idx : idx);
-    } else {
-      for (const child of node) walk(child);
+  // Flatten arc indices from a TopoJSON geometry into their absolute indices
+  function arcSet(geom) {
+    const s = new Set();
+    function walk(a) {
+      if (typeof a === 'number') s.add(a < 0 ? ~a : a);
+      else if (Array.isArray(a)) a.forEach(walk);
     }
-  }
-  if (geomObj.arcs) walk(geomObj.arcs);
-  return indices;
-}
-
-/**
- * Construit le graphe d'adjacence entre CLPE en s'appuyant sur
- * les arcs partagés de la topologie (O(n) en nombre d'arcs).
- * Retourne Map<clpeName → Set<clpeName>>.
- */
-function buildAdjacency(topo, csvMap) {
-  const objectKey = Object.keys(topo.objects)[0];
-  const communeGeoms = topo.objects[objectKey].geometries;
-
-  // arcIdx → liste des codes INSEE qui l'utilisent
-  const arcToInsee = new Map();
-
-  for (const geom of communeGeoms) {
-    if (!geom || !geom.properties) continue;
-    const insee = String(geom.properties.INSEE_COM || '').padStart(5, '0');
-    if (!csvMap.has(insee)) continue;
-    for (const arcIdx of getAllArcIndices(geom)) {
-      if (!arcToInsee.has(arcIdx)) arcToInsee.set(arcIdx, []);
-      arcToInsee.get(arcIdx).push(insee);
-    }
+    if (geom.arcs) walk(geom.arcs);
+    return s;
   }
 
-  // Adjacence CLPE depuis les arcs partagés
-  const adj = new Map();
-  for (const insees of arcToInsee.values()) {
-    if (insees.length < 2) continue;
-    for (let i = 0; i < insees.length; i++) {
-      for (let j = i + 1; j < insees.length; j++) {
-        const c1 = csvMap.get(insees[i]);
-        const c2 = csvMap.get(insees[j]);
-        if (!c1 || !c2 || c1 === c2) continue;
-        if (!adj.has(c1)) adj.set(c1, new Set());
-        if (!adj.has(c2)) adj.set(c2, new Set());
-        adj.get(c1).add(c2);
-        adj.get(c2).add(c1);
+  // arc index → set of CLPE names that use it
+  const arcMap = new Map();
+  for (const [clpe, geoms] of Object.entries(groups)) {
+    for (const geom of geoms) {
+      for (const arc of arcSet(geom)) {
+        if (!arcMap.has(arc)) arcMap.set(arc, new Set());
+        arcMap.get(arc).add(clpe);
       }
     }
   }
-  return adj;
-}
 
-/* ════════════════════════════════════════════════════════════════════
-   COLORIAGE DE GRAPHE (glouton)
-   ════════════════════════════════════════════════════════════════════ */
+  // Two CLPEs are adjacent iff they share at least one arc
+  const adj = {};
+  for (const clpe of Object.keys(groups)) adj[clpe] = new Set();
 
-/**
- * Algorithme glouton de coloriage.
- * Ordre décroissant par degré (heuristique de Welsh–Powell).
- * Retourne objet { clpeName → couleur_hex }.
- */
-function graphColor(clpeNames, adj, palette) {
-  const sorted = [...clpeNames].sort(
-    (a, b) => (adj.get(b)?.size || 0) - (adj.get(a)?.size || 0)
-  );
-  const coloring = {};
-  for (const name of sorted) {
-    const usedByNeighbors = new Set(
-      [...(adj.get(name) || [])].map(n => coloring[n]).filter(Boolean)
-    );
-    coloring[name] = palette.find(c => !usedByNeighbors.has(c)) ?? palette[0];
-  }
-  return coloring;
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   UTILITAIRES GÉOMÉTRIE
-   ════════════════════════════════════════════════════════════════════ */
-
-/**
- * Luminance relative (WCAG 2.1) → true si fond clair.
- */
-function isLightColor(hex) {
-  const r = parseInt(hex.slice(1,3), 16) / 255;
-  const g = parseInt(hex.slice(3,5), 16) / 255;
-  const b = parseInt(hex.slice(5,7), 16) / 255;
-  const toLinear = c => c <= .03928 ? c / 12.92 : Math.pow((c+.055)/1.055, 2.4);
-  const lum = .2126*toLinear(r) + .7152*toLinear(g) + .0722*toLinear(b);
-  return lum > .35;
-}
-
-/**
- * Calcule le centroïde approximatif (anneau extérieur du plus grand polygone).
- */
-function featureCentroid(feature) {
-  const geom = feature.geometry;
-  if (!geom) return null;
-
-  function ringBBox(ring) {
-    let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
-    for (const [x, y] of ring) { x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); }
-    return { area: (x1-x0)*(y1-y0), cx:(x0+x1)/2, cy:(y0+y1)/2 };
+  for (const clpes of arcMap.values()) {
+    if (clpes.size === 2) {
+      const [a, b] = [...clpes];
+      adj[a].add(b);
+      adj[b].add(a);
+    }
   }
 
-  let best = null;
-  const polys = geom.type === 'Polygon'      ? [geom.coordinates]
-              : geom.type === 'MultiPolygon' ?  geom.coordinates
-              : null;
-  if (!polys) return null;
-
-  for (const poly of polys) {
-    const b = ringBBox(poly[0]);
-    if (!best || b.area > best.area) best = b;
-  }
-  return best ? L.latLng(best.cy, best.cx) : null;
+  // Convert Sets to arrays
+  const result = {};
+  for (const [k, v] of Object.entries(adj)) result[k] = [...v];
+  return result;
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   RENDU — CLPE
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   GREEDY GRAPH COLORING
+══════════════════════════════════════════════════════ */
+function greedyColor(adj) {
+  const n = CFG.blues.length;
+  const colors = {};
+  // Sort by degree descending (Welsh-Powell heuristic)
+  const clpes = Object.keys(adj).sort((a, b) => adj[b].length - adj[a].length);
+  for (const clpe of clpes) {
+    const used = new Set((adj[clpe] || []).map(nb => colors[nb]).filter(c => c !== undefined));
+    for (let c = 0; c < n; c++) {
+      if (!used.has(c)) { colors[clpe] = c; break; }
+    }
+    if (colors[clpe] === undefined) colors[clpe] = 0;
+  }
+  return colors;
+}
 
-function renderClpe(features, coloring) {
-  const geojson = { type: 'FeatureCollection', features };
+/* ══════════════════════════════════════════════════════
+   TILE LAYER FACTORY
+══════════════════════════════════════════════════════ */
+function makeTile() {
+  return L.tileLayer(CFG.wmts, {
+    attribution: '© <a href="https://www.ign.fr">IGN</a> – Géoportail',
+    maxZoom: 19, tileSize: 256,
+  });
+}
 
-  clpeGeoLayer = L.geoJSON(geojson, {
-    pane: 'paneClpe',
+/* ══════════════════════════════════════════════════════
+   LABEL MARKER
+══════════════════════════════════════════════════════ */
+function labelMarker(lat, lng, text, cls) {
+  return L.marker([lat, lng], {
+    icon: L.divIcon({ html: `<span class="${cls}">${text}</span>`,
+                      className: 'lbl-marker', iconAnchor: [0, 0] }),
+    interactive: false,
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   LAYER TOGGLE LOGIC
+══════════════════════════════════════════════════════ */
+const LAYERS = {};   // clpe, dept, region, regionLabels, deptLabels
+let mainMap;
+
+function toggleLayer(name) {
+  const btn = document.getElementById('btn-' + name);
+  if (!mainMap) return;
+
+  if (name === 'labels') {
+    const on = btn.classList.toggle('active');
+    ['regionLabels', 'deptLabels'].forEach(k => {
+      if (LAYERS[k]) {
+        if (on) mainMap.addLayer(LAYERS[k]);
+        else    mainMap.removeLayer(LAYERS[k]);
+      }
+    });
+    return;
+  }
+
+  const layer = LAYERS[name];
+  if (!layer) return;
+  if (mainMap.hasLayer(layer)) { mainMap.removeLayer(layer); btn.classList.remove('active'); }
+  else                         { mainMap.addLayer(layer);    btn.classList.add('active');    }
+}
+
+/* ══════════════════════════════════════════════════════
+   COMMUNE LAYER (show only at high zoom)
+══════════════════════════════════════════════════════ */
+let commLayerAdded = false;
+function updateCommLayer(map, commFC) {
+  if (map.getZoom() >= 10) {
+    if (!commLayerAdded) {
+      LAYERS.commune = L.geoJSON(commFC, {
+        style: { fill: false, color: '#cbd5e1', weight: 0.4, opacity: 0.55 },
+      }).addTo(map);
+      LAYERS.commune.bringToBack();
+      commLayerAdded = true;
+    }
+  } else {
+    if (commLayerAdded && LAYERS.commune) {
+      map.removeLayer(LAYERS.commune); LAYERS.commune = null; commLayerAdded = false;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   DEPT LABELS (show at zoom ≥ 8)
+══════════════════════════════════════════════════════ */
+function updateDeptLabels(map) {
+  const show = map.getZoom() >= 8;
+  if (show && LAYERS.deptLabels && !map.hasLayer(LAYERS.deptLabels)) {
+    map.addLayer(LAYERS.deptLabels);
+  } else if (!show && LAYERS.deptLabels && map.hasLayer(LAYERS.deptLabels)) {
+    map.removeLayer(LAYERS.deptLabels);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   ADD LAYERS TO A MAP (main or inset)
+══════════════════════════════════════════════════════ */
+function addLayers(map, clpeFC, deptFC, regionFC, colorMap, opts = {}) {
+  const { isInset = false } = opts;
+
+  // ── CLPE filled polygons ──
+  const clpeGJ = L.geoJSON(clpeFC, {
     style: f => {
-      const fill = coloring[f.properties.CLPE] || CFG.BLUE_PALETTE[3];
+      const ci = colorMap[f.properties._clpe] ?? 0;
       return {
-        fillColor:   fill,
-        fillOpacity: CFG.FILL_OPACITY,
-        color:       'rgba(255,255,255,.7)',
-        weight:      1.2,
-        opacity:     .9,
+        fillColor  : CFG.blues[ci],
+        fillOpacity: 0.55,
+        color      : CFG.blueStroke[ci],
+        weight     : isInset ? 0.8 : 1.2,
+        opacity    : 0.85,
       };
     },
-    onEachFeature: (feature, layer) => {
-      const clpe  = feature.properties.CLPE;
-      const count = feature.properties.count;
-      const fill  = coloring[clpe] || CFG.BLUE_PALETTE[3];
-      const fg    = isLightColor(fill) ? '#0b1f3e' : '#ffffff';
-
-      layer.bindTooltip(
-        `<div class="clpe-tip-inner" style="background:${fill};color:${fg}">${clpe}</div>`,
-        { sticky: true, direction: 'top', offset: [0, -6], className: 'clpe-tip' }
-      );
-
-      layer.on('mouseover', function () {
-        if (activeLayer && activeLayer !== layer) {
-          clpeGeoLayer.resetStyle(activeLayer);
-        }
-        activeLayer = layer;
-        layer.setStyle({
-          fillOpacity: CFG.FILL_OPACITY_HOVER,
-          color: 'rgba(255,255,255,1)',
-          weight: 2.2,
-        });
-        layer.bringToFront();
-        showInfoPanel(clpe, count, fill);
-      });
-
-      layer.on('mouseout', function () {
-        clpeGeoLayer.resetStyle(layer);
-        activeLayer = null;
-        hideInfoPanel();
+    onEachFeature: isInset ? undefined : (f, layer) => {
+      layer.bindTooltip(f.properties._clpe, { className: 'tt-clpe', sticky: true, offset:[8,0] });
+      layer.on({
+        mouseover: e => { e.target.setStyle({ fillOpacity: 0.82, weight: 2.2 }); e.target.bringToFront(); },
+        mouseout : e => { clpeGJ.resetStyle(e.target); },
       });
     },
-  }).addTo(map);
-}
+  });
+  if (!isInset) {
+    LAYERS.clpe = clpeGJ;
+    clpeGJ.addTo(map);
+  } else {
+    clpeGJ.addTo(map);
+  }
 
-/* ════════════════════════════════════════════════════════════════════
-   RENDU — COMMUNES (mesh topologique)
-   ════════════════════════════════════════════════════════════════════ */
+  // ── Department boundaries ──
+  const deptGJ = L.geoJSON(deptFC, {
+    style: { fill: false, color: '#64748b', weight: isInset ? 1 : 1.5, opacity: 0.75 },
+  });
+  if (!isInset) { LAYERS.dept = deptGJ; deptGJ.addTo(map); }
+  else deptGJ.addTo(map);
 
-function renderCommuneMesh(topo) {
-  const objectKey  = Object.keys(topo.objects)[0];
-  // Uniquement les arcs intérieurs (partagés entre 2 communes)
-  const mesh = topojson.mesh(topo, topo.objects[objectKey], (a, b) => a !== b);
-  L.geoJSON(mesh, {
-    pane: 'paneCommune',
-    style: {
-      color:       '#8ab5d8',
-      weight:      0.4,
-      opacity:     0.55,
-      fill:        false,
-      interactive: false,
-    },
-    interactive: false,
-  }).addTo(map);
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   RENDU — DÉPARTEMENTS
-   ════════════════════════════════════════════════════════════════════ */
-
-function renderDepartements(depsGeo) {
-  L.geoJSON(depsGeo, {
-    pane: 'paneDep',
-    style: {
-      color:       '#1853a0',
-      weight:      1.6,
-      opacity:     .85,
-      fill:        false,
-      interactive: false,
-    },
-    interactive: false,
-  }).addTo(map);
-
-  // Labels
-  for (const f of (depsGeo.features || [])) {
-    const latlng = featureCentroid(f);
-    if (!latlng) continue;
-    const nom = (f.properties.NOM || f.properties.nom || '').trim();
-    if (!nom) continue;
-    const m = L.marker(latlng, {
-      icon: L.divIcon({
-        className: 'lbl-dep',
-        html: `<span>${nom}</span>`,
-        iconSize: null, iconAnchor: [0, 0],
-      }),
-      pane: 'paneLabel',
-      interactive: false,
+  // ── Region boundaries ──
+  if (!isInset) {
+    const regionGJ = L.geoJSON(regionFC, {
+      style: { fill: false, color: '#1e3a8a', weight: 2.5, opacity: 0.9 },
     });
-    labelMarkers.dep.push(m);
+    LAYERS.region = regionGJ;
+    regionGJ.addTo(map);
   }
-  updateLabelVisibility();
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   RENDU — RÉGIONS
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   DOM INSET MAPS
+══════════════════════════════════════════════════════ */
+function setupInsetMaps(clpeFC, deptFC, colorMap) {
+  for (const dom of CFG.dom) {
+    const el = document.getElementById('map-' + dom.id);
+    if (!el) continue;
 
-function renderRegions(regsGeo) {
-  L.geoJSON(regsGeo, {
-    pane: 'paneReg',
-    style: {
-      color:   '#002b70',
-      weight:  2.6,
-      opacity: .95,
-      fill:    false,
-      interactive: false,
-    },
-    interactive: false,
-  }).addTo(map);
-
-  // Labels régions
-  for (const f of (regsGeo.features || [])) {
-    const latlng = featureCentroid(f);
-    if (!latlng) continue;
-    const nom = (f.properties.NOM || f.properties.nom || '').trim();
-    if (!nom) continue;
-    const m = L.marker(latlng, {
-      icon: L.divIcon({
-        className: 'lbl-region',
-        html: `<span>${nom}</span>`,
-        iconSize: null, iconAnchor: [0, 0],
-      }),
-      pane: 'paneLabel',
-      interactive: false,
+    const inset = L.map(el, {
+      zoomControl: false, attributionControl: false,
+      dragging: false, scrollWheelZoom: false,
+      doubleClickZoom: false, boxZoom: false, keyboard: false,
+      tap: false,
     });
-    labelMarkers.reg.push(m);
+    inset.fitBounds(dom.bounds);
+    makeTile().addTo(inset);
+
+    // Filter CLPE features by dept bbox
+    const [[minLat, minLng], [maxLat, maxLng]] = dom.bounds;
+    const domCLPE = {
+      type: 'FeatureCollection',
+      features: clpeFC.features.filter(f => {
+        try {
+          const bb = turf.bbox(f); // [minLng,minLat,maxLng,maxLat]
+          return bb[0] < maxLng + 0.5 && bb[2] > minLng - 0.5 &&
+                 bb[1] < maxLat + 0.5 && bb[3] > minLat - 0.5;
+        } catch(_) { return false; }
+      }),
+    };
+
+    const domDepts = {
+      type: 'FeatureCollection',
+      features: deptFC.features.filter(f => {
+        const code = String(f.properties?.INSEE_DEP || f.properties?.code || '');
+        return code === dom.id;
+      }),
+    };
+
+    addLayers(inset, domCLPE, domDepts, null, colorMap, { isInset: true });
   }
-  updateLabelVisibility();
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   GESTION DES LABELS (zoom-dépendant)
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   LABELS
+══════════════════════════════════════════════════════ */
+function buildLabels(regionFeats, deptFeats) {
+  // Region labels (always visible after zoom)
+  const regionGrp = L.layerGroup();
+  regionFeats.forEach(f => {
+    try {
+      const c = turf.centerOfMass(f);
+      const [lng, lat] = c.geometry.coordinates;
+      const nom = f.properties.NOM || f.properties.NOM_M || '';
+      regionGrp.addLayer(labelMarker(lat, lng, nom, 'lbl-region'));
+    } catch(_) {}
+  });
+  LAYERS.regionLabels = regionGrp;
 
-function updateLabelVisibility() {
-  const z = map.getZoom();
-
-  for (const m of labelMarkers.reg) {
-    if (z >= CFG.ZOOM_SHOW_REG) {
-      if (!map.hasLayer(m)) m.addTo(map);
-    } else {
-      if (map.hasLayer(m)) map.removeLayer(m);
-    }
-  }
-  for (const m of labelMarkers.dep) {
-    if (z >= CFG.ZOOM_SHOW_DEP) {
-      if (!map.hasLayer(m)) m.addTo(map);
-    } else {
-      if (map.hasLayer(m)) map.removeLayer(m);
-    }
-  }
+  // Dept labels (visible at zoom ≥ 8)
+  const deptGrp = L.layerGroup();
+  deptFeats.forEach(f => {
+    try {
+      const c = turf.centerOfMass(f);
+      const [lng, lat] = c.geometry.coordinates;
+      const nom = f.properties.NOM || f.properties.NOM_M || '';
+      deptGrp.addLayer(labelMarker(lat, lng, nom, 'lbl-dept'));
+    } catch(_) {}
+  });
+  LAYERS.deptLabels = deptGrp;
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   INITIALISATION PRINCIPALE
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   MAIN ORCHESTRATION
+══════════════════════════════════════════════════════ */
+async function main() {
+  // ── 1. Map init ──
+  mainMap = L.map('map', { center: [46.6, 2.5], zoom: 6 });
+  makeTile().addTo(mainMap);
 
-async function init() {
-  /* ── Initialise la carte ── */
-  map = L.map('map', {
-    center:           CFG.MAP_CENTER,
-    zoom:             CFG.MAP_ZOOM,
-    zoomControl:      true,
-    attributionControl: true,
-    preferCanvas:     false,
+  // ── 2. Load CSV ──
+  const csvMap = await loadCSV();
+
+  // ── 3. Load geodata ──
+  const regionFeats = await fetchAllWFS(CFG.layers.region, 'Chargement des régions',       6,  10);
+  const deptFeats   = await fetchAllWFS(CFG.layers.dept,   'Chargement des départements',  10,  16);
+  const commFeats   = await fetchAllWFS(CFG.layers.commune,'Chargement des communes',       16,  55);
+  const assocFeats  = await fetchAllWFS(CFG.layers.assoc,  'Chargement des communes associées/déléguées', 55, 65);
+
+  // ── 4. Build mapping ──
+  setStep('Construction du mapping INSEE → CLPE…', 66);
+  await new Promise(r => setTimeout(r, 0));
+  const fullMapping = buildFullMapping(csvMap, assocFeats);
+
+  // ── 5. Dissolve (TopoJSON) ──
+  const { topo, groups, fc: clpeFC } = await dissolveByClpe(commFeats, assocFeats, fullMapping);
+
+  // ── 6. Adjacency (arc-based) ──
+  const adj = buildAdjacency(topo, groups);
+  setStep('Coloriage du graphe…', 87);
+  await new Promise(r => setTimeout(r, 0));
+
+  // ── 7. Graph coloring ──
+  const colorIdxMap = greedyColor(adj);
+  // Rebuild as { clpeName: colorIndex }
+  const colorMap = {};
+  for (const [clpe, idx] of Object.entries(colorIdxMap)) colorMap[clpe] = idx;
+  // Also store color index in feature properties for fast lookup
+  clpeFC.features.forEach(f => {
+    f.properties._ci = colorMap[f.properties._clpe] ?? 0;
   });
 
-  // Fond de carte léger (CartoDB Positron sans labels)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors' +
-      ' &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>' +
-      ' | Source géo : <a href="https://geo.api.gouv.fr" target="_blank">Etalab</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(map);
+  // ── 8. Build GeoJSON collections ──
+  const regionFC = { type: 'FeatureCollection', features: regionFeats };
+  const deptFC   = { type: 'FeatureCollection', features: deptFeats };
+  const commFC   = { type: 'FeatureCollection', features: commFeats };
 
-  /* ── Panes (z-order) ── */
-  map.createPane('paneClpe');   map.getPane('paneClpe').style.zIndex   = 400;
-  map.createPane('paneCommune');map.getPane('paneCommune').style.zIndex = 410;
-  map.createPane('paneDep');    map.getPane('paneDep').style.zIndex     = 420;
-  map.createPane('paneReg');    map.getPane('paneReg').style.zIndex     = 430;
-  map.createPane('paneLabel');  map.getPane('paneLabel').style.zIndex   = 640;
+  // ── 9. Add layers to main map ──
+  setStep('Affichage de la carte…', 90);
+  await new Promise(r => setTimeout(r, 0));
+  addLayers(mainMap, clpeFC, deptFC, regionFC, colorMap);
 
-  map.on('zoomend', updateLabelVisibility);
+  // ── 10. Labels ──
+  buildLabels(regionFeats, deptFeats);
+  mainMap.addLayer(LAYERS.regionLabels);
+  // deptLabels added conditionally by zoom
 
-  /* ── Chargement des données ── */
-  try {
-    setLoadingStep('Chargement des données géographiques…');
-    const [topo, depsGeo, regsGeo, csvText] = await Promise.all([
-      fetch(CFG.TOPO_PATH).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status} : ${CFG.TOPO_PATH}`); return r.json(); }),
-      fetch(CFG.DEP_PATH).then(r  => { if (!r.ok) throw new Error(`HTTP ${r.status} : ${CFG.DEP_PATH}`);  return r.json(); }),
-      fetch(CFG.REG_PATH).then(r  => { if (!r.ok) throw new Error(`HTTP ${r.status} : ${CFG.REG_PATH}`);  return r.json(); }),
-      fetch(CFG.CSV_PATH).then(r  => { if (!r.ok) throw new Error(`HTTP ${r.status} : ${CFG.CSV_PATH}`);  return r.text(); }),
-    ]);
+  // ── 11. Commune layer (zoom-dependent) ──
+  mainMap.on('zoomend', () => {
+    updateCommLayer(mainMap, commFC);
+    updateDeptLabels(mainMap);
+  });
+  updateDeptLabels(mainMap);
 
-    setLoadingStep('Lecture du fichier CSV…');
-    const csvMap = parseCSV(csvText);
-    if (csvMap.size === 0) throw new Error('Le CSV semble vide ou mal formaté (colonnes attendues : INSEE_COM, CLPE).');
+  // ── 12. DOM insets ──
+  setStep('Construction des encarts DOM…', 95);
+  await new Promise(r => setTimeout(r, 0));
+  setupInsetMaps(clpeFC, deptFC, colorMap);
 
-    setLoadingStep('Construction des polygones CLPE…');
-    const { features } = buildClpeFeatures(topo, csvMap);
-    if (!features.length) throw new Error('Aucune correspondance entre le CSV et les communes du TopoJSON.');
+  // ── 13. Stats ──
+  document.getElementById('stat-clpe').textContent  = clpeFC.features.length.toLocaleString('fr');
+  document.getElementById('stat-comm').textContent  = commFeats.length.toLocaleString('fr');
+  document.getElementById('stat-assoc').textContent = assocFeats.length.toLocaleString('fr');
 
-    setLoadingStep('Calcul des adjacences…');
-    const adj = buildAdjacency(topo, csvMap);
+  console.info(`[CLPE] ${clpeFC.features.length} polygones, ${commFeats.length} communes, ` +
+               `${assocFeats.length} communes assoc.`);
 
-    setLoadingStep('Coloriage des zones…');
-    const clpeNames = features.map(f => f.properties.CLPE);
-    const coloring  = graphColor(clpeNames, adj, CFG.BLUE_PALETTE);
-
-    setLoadingStep('Rendu des couches…');
-    renderClpe(features, coloring);
-    renderCommuneMesh(topo);
-    renderDepartements(depsGeo);
-    renderRegions(regsGeo);
-
-    updateStats(features.length, csvMap.size);
-    hideLoading();
-
-    console.info(
-      `✓ Carte CLPE chargée : ${features.length} CLPE, ${csvMap.size} communes, ` +
-      `${CFG.BLUE_PALETTE.length} couleurs utilisées.`
-    );
-
-  } catch (err) {
-    console.error('Erreur lors du chargement :', err);
-    showError(
-      err.message,
-      'Assurez-vous que <code>topo_communes.json</code>, <code>departements.geojson</code>, ' +
-      '<code>regions.geojson</code> et <code>communes_clpe.csv</code> sont présents ' +
-      'à la racine du dépôt. Consultez la console pour plus de détails.'
-    );
-  }
+  setStep('✅ Carte prête !', 100);
+  await new Promise(r => setTimeout(r, 500));
+  hideOverlay();
 }
 
-/* ── Lancement ─────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', init);
+/* ══════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════ */
+main().catch(err => {
+  console.error('[CLPE] Erreur fatale :', err);
+  document.getElementById('ov-step').textContent   = '❌ ' + err.message;
+  document.getElementById('ov-step').style.color   = '#fca5a5';
+  document.getElementById('ov-bar').style.background = '#ef4444';
+});
 </script>
 </body>
 </html>
