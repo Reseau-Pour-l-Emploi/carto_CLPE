@@ -244,8 +244,6 @@ const CLPE_DATA = {"01001": "Dombes - Saône - Côtière", "01002": "Plaine de l
 <!-- ═══════════════ LIBRARIES ═══════════════ -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://unpkg.com/topojson-server@3.0.1/dist/topojson-server.min.js"></script>
-<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
 <script>
@@ -345,10 +343,8 @@ async function fetchAllWFS(typeName, label, p0, p1) {
 ══════════════════════════════════════════════════════ */
 async function loadCSV() {
   setStep('Chargement des données CLPE…', 2);
-  // Données embarquées directement dans le HTML (communes_clpe.csv)
-  const map = CLPE_DATA;
-  console.info(`[CSV] ${Object.keys(map).length} entrées chargées.`);
-  return map;
+  console.info(`[CSV] ${Object.keys(CLPE_DATA).length} entrées chargées.`);
+  return CLPE_DATA;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -386,100 +382,80 @@ function sanitizeFeats(feats) {
 }
 
 /* ══════════════════════════════════════════════════════
-   DISSOLVE BY CLPE  (via TopoJSON – very fast)
+   DISSOLVE BY CLPE  (turf.union commune par commune)
 ══════════════════════════════════════════════════════ */
-async function dissolveByClpe(commFeats, assocFeats, mapping) {
-  setStep('Conversion en topologie (TopoJSON)…', 68);
+async function dissolveByClpe(commFeats, mapping) {
+  setStep('Attribution des CLPE aux communes\u2026', 66);
 
-  // N'utiliser QUE les communes (pas les associées/déléguées dont les géométries
-  // se superposent à celles des communes parentes et créent des contours faux)
-  const all = sanitizeFeats([...commFeats]);
-
-  // Tag each feature with its CLPE
-  all.forEach(f => {
-    const code = String(f.properties?.INSEE_COM || f.properties?.code || '').trim().padStart(5,'0');
-    f.properties._clpe = mapping[code] || 'Non assigné';
-  });
-
-  // Build TopoJSON topology (shared arc representation)
-  const topo = topojson.topology({ communes: { type: 'FeatureCollection', features: all } });
-
-  // Group topology geometries by CLPE
-  setStep('Regroupement des communes par CLPE…', 72);
+  // Grouper les communes par CLPE
   const groups = {};
-  for (const geom of topo.objects.communes.geometries) {
-    if (!geom) continue;
-    const clpe = geom.properties?._clpe || 'Non assigné';
-    (groups[clpe] = groups[clpe] || []).push(geom);
+  let assigned = 0;
+  for (const f of commFeats) {
+    if (!f.geometry) continue;
+    const code = String(f.properties?.INSEE_COM || f.properties?.code || '').trim();
+    const clpe = mapping[code] || mapping[code.padStart(5,'0')] || null;
+    if (!clpe) continue;
+    if (!groups[clpe]) groups[clpe] = [];
+    groups[clpe].push({ type: 'Feature', geometry: f.geometry, properties: {} });
+    assigned++;
   }
 
   const clpeNames = Object.keys(groups);
-  const features  = [];
+  console.info(`[CLPE] ${assigned} communes assignées \u2192 ${clpeNames.length} CLPE`);
+  setStep(`Fusion de ${assigned} communes en ${clpeNames.length} CLPE\u2026`, 68);
+  await new Promise(r => setTimeout(r, 0));
 
-  // Merge each CLPE group (shared arcs → very fast)
+  const features = [];
+
   for (let i = 0; i < clpeNames.length; i++) {
     const clpe = clpeNames[i];
-    if (i % 30 === 0) {
-      setStep(`Fusion CLPE ${i + 1} / ${clpeNames.length}…`, 72 + (i / clpeNames.length) * 12);
-      await new Promise(r => setTimeout(r, 0)); // yield to browser
+    const comms = groups[clpe];
+
+    if (i % 5 === 0) {
+      setStep(`Fusion CLPE ${i + 1} / ${clpeNames.length}\u2026`, 68 + (i / clpeNames.length) * 17);
+      await new Promise(r => setTimeout(r, 0));
     }
+
     try {
-      const merged = topojson.merge(topo, groups[clpe]);
-      if (merged) {
-        features.push({ type: 'Feature', properties: { _clpe: clpe }, geometry: merged });
+      let merged = comms[0];
+      for (let j = 1; j < comms.length; j++) {
+        try { merged = turf.union(merged, comms[j]); } catch(_) {}
       }
-    } catch (e) {
+      merged.properties = { _clpe: clpe };
+      features.push(merged);
+    } catch(e) {
       console.warn(`[dissolve] Erreur sur CLPE "${clpe}":`, e.message);
     }
   }
 
-  return { topo, groups, fc: { type: 'FeatureCollection', features } };
+  console.info(`[CLPE] ${features.length} polygones CLPE créés`);
+  return { type: 'FeatureCollection', features };
 }
 
 /* ══════════════════════════════════════════════════════
-   ADJACENCY  (arc-based, O(total arcs) – no geometry ops)
+   ADJACENCY  (bbox overlap entre polygones CLPE dissous)
 ══════════════════════════════════════════════════════ */
-function buildAdjacency(topo, groups) {
-  setStep('Calcul du graphe d\'adjacence…', 85);
+function buildAdjacency(clpeFC) {
+  setStep('Calcul du graphe d\'adjacence\u2026', 86);
+  const feats  = clpeFC.features;
+  const bboxes = feats.map(f => { try { return turf.bbox(f); } catch(_) { return null; } });
+  const adj    = {};
+  feats.forEach(f => { adj[f.properties._clpe] = []; });
 
-  // Flatten arc indices from a TopoJSON geometry into their absolute indices
-  function arcSet(geom) {
-    const s = new Set();
-    function walk(a) {
-      if (typeof a === 'number') s.add(a < 0 ? ~a : a);
-      else if (Array.isArray(a)) a.forEach(walk);
-    }
-    if (geom.arcs) walk(geom.arcs);
-    return s;
-  }
-
-  // arc index → set of CLPE names that use it
-  const arcMap = new Map();
-  for (const [clpe, geoms] of Object.entries(groups)) {
-    for (const geom of geoms) {
-      for (const arc of arcSet(geom)) {
-        if (!arcMap.has(arc)) arcMap.set(arc, new Set());
-        arcMap.get(arc).add(clpe);
-      }
+  for (let i = 0; i < feats.length; i++) {
+    if (!bboxes[i]) continue;
+    for (let j = i + 1; j < feats.length; j++) {
+      if (!bboxes[j]) continue;
+      const [ax1,ay1,ax2,ay2] = bboxes[i];
+      const [bx1,by1,bx2,by2] = bboxes[j];
+      if (ax2 < bx1 || bx2 < ax1 || ay2 < by1 || by2 < ay1) continue;
+      const a = feats[i].properties._clpe;
+      const b = feats[j].properties._clpe;
+      adj[a].push(b);
+      adj[b].push(a);
     }
   }
-
-  // Two CLPEs are adjacent iff they share at least one arc
-  const adj = {};
-  for (const clpe of Object.keys(groups)) adj[clpe] = new Set();
-
-  for (const clpes of arcMap.values()) {
-    if (clpes.size === 2) {
-      const [a, b] = [...clpes];
-      adj[a].add(b);
-      adj[b].add(a);
-    }
-  }
-
-  // Convert Sets to arrays
-  const result = {};
-  for (const [k, v] of Object.entries(adj)) result[k] = [...v];
-  return result;
+  return adj;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -488,7 +464,6 @@ function buildAdjacency(topo, groups) {
 function greedyColor(adj) {
   const n = CFG.blues.length;
   const colors = {};
-  // Sort by degree descending (Welsh-Powell heuristic)
   const clpes = Object.keys(adj).sort((a, b) => adj[b].length - adj[a].length);
   for (const clpe of clpes) {
     const used = new Set((adj[clpe] || []).map(nb => colors[nb]).filter(c => c !== undefined));
@@ -721,13 +696,13 @@ async function main() {
   // ── 4. Build mapping ──
   setStep('Construction du mapping INSEE → CLPE…', 66);
   await new Promise(r => setTimeout(r, 0));
-  const fullMapping = buildFullMapping(csvMap, assocFeats);
+  const fullMapping = csvMap; // mapping direct depuis CSV embarqué
 
   // ── 5. Dissolve (TopoJSON) ──
-  const { topo, groups, fc: clpeFC } = await dissolveByClpe(commFeats, assocFeats, fullMapping);
+  const clpeFC = await dissolveByClpe(commFeats, fullMapping);
 
-  // ── 6. Adjacency (arc-based) ──
-  const adj = buildAdjacency(topo, groups);
+  // ── 6. Adjacency (bbox-based sur polygones CLPE) ──
+  const adj = buildAdjacency(clpeFC);
   setStep('Coloriage du graphe…', 87);
   await new Promise(r => setTimeout(r, 0));
 
