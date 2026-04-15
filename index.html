@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Carte CLPE 2026 – Admin Express WFS</title>
+<title>Carte CLPE 2026 – WFS GéoPlateforme</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -32,7 +32,7 @@ body {
 
 <div id="sidebar">
     <h2>CLPE – France 2026</h2>
-    <p>Données Admin Express 2026 via WFS</p>
+    <p>Données Admin Express 2026 via WFS privé GéoPlateforme</p>
     <p>Contours visibles :</p>
     <ul>
         <li>Régions 2026</li>
@@ -59,17 +59,24 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // ------------------------------------------------------------
-// 3. URLs WFS Admin Express 2026
+// 3. Clé API + hash (à remplacer par les tiens)
 // ------------------------------------------------------------
-const WFS_BASE =
-  "https://datacarto.atlasante.fr/wfs?service=WFS&version=1.0.0&request=GetFeature&outputFormat=application/json&typeName=";
-
-const URL_REGIONS = WFS_BASE + "ign_metropole_adminexpress_regions_z";
-const URL_DEPTS   = WFS_BASE + "ign_metropole_adminexpress_departements_z";
-const URL_COM     = WFS_BASE + "ign_metropole_adminexpress_communes_z";
+const APIKEY = "5yPRxA790EJkA0zXABQ5yPCG8OSIdHx3";
+const HASH   = "5ae91aa3-5c12-4151-8b8c-6c81efe04eeb";
 
 // ------------------------------------------------------------
-// 4. Chargement du CSV
+// 4. URLs WFS Admin Express 2026 (privé)
+// ------------------------------------------------------------
+function wfsUrl(typeName) {
+    return `https://data.geopf.fr/private/wfs/?service=WFS&version=2.0.0&request=GetFeature&typeName=${typeName}&outputFormat=application/json&apikey=${APIKEY}&hash=${HASH}`;
+}
+
+const URL_REGIONS = wfsUrl("ADMINEXPRESS:region");
+const URL_DEPTS   = wfsUrl("ADMINEXPRESS:departement");
+const URL_COM     = wfsUrl("ADMINEXPRESS:commune");
+
+// ------------------------------------------------------------
+// 5. Chargement du CSV CLPE
 // ------------------------------------------------------------
 let csvData = null;
 
@@ -83,7 +90,7 @@ Papa.parse("communes_clpe.csv", {
 });
 
 // ------------------------------------------------------------
-// 5. Chargement WFS 2026
+// 6. Chargement WFS 2026
 // ------------------------------------------------------------
 async function loadWFS() {
     const [regions, depts, communes] = await Promise.all([
@@ -99,40 +106,28 @@ async function loadWFS() {
 }
 
 // ------------------------------------------------------------
-// 6. Styles des couches
+// 7. Styles des couches
 // ------------------------------------------------------------
 function drawRegions(regions) {
     L.geoJSON(regions, {
-        style: {
-            color: "#002b55",
-            weight: 3,
-            fillOpacity: 0
-        }
+        style: { color: "#002b55", weight: 3, fillOpacity: 0 }
     }).addTo(map);
 }
 
 function drawDepartements(depts) {
     L.geoJSON(depts, {
-        style: {
-            color: "#0055aa",
-            weight: 1.8,
-            fillOpacity: 0
-        }
+        style: { color: "#0055aa", weight: 1.8, fillOpacity: 0 }
     }).addTo(map);
 }
 
 function drawCommunes(communes) {
     L.geoJSON(communes, {
-        style: {
-            color: "#999",
-            weight: 0.4,
-            fillOpacity: 0
-        }
+        style: { color: "#999", weight: 0.4, fillOpacity: 0 }
     }).addTo(map);
 }
 
 // ------------------------------------------------------------
-// 7. Fusion des communes par CLPE
+// 8. Fusion des communes par CLPE
 // ------------------------------------------------------------
 function aggregateCLPE(communesGeo) {
     const mapCLPE = {};
@@ -154,7 +149,7 @@ function aggregateCLPE(communesGeo) {
 }
 
 // ------------------------------------------------------------
-// 8. Palette de bleus
+// 9. Palette de bleus
 // ------------------------------------------------------------
 function generateBluePalette(n) {
     const colors = [];
@@ -168,7 +163,7 @@ function generateBluePalette(n) {
 }
 
 // ------------------------------------------------------------
-// 9. Affichage des CLPE fusionnés
+// 10. Affichage des CLPE fusionnés
 // ------------------------------------------------------------
 function drawCLPE(mapCLPE) {
     const clpeNames = Object.keys(mapCLPE);
