@@ -28,7 +28,6 @@ body {
 #map {
     flex: 1;
 }
-
 </style>
 </head>
 
@@ -36,7 +35,13 @@ body {
 
 <div id="sidebar">
     <h2>Comités Locaux pour l’Emploi</h2>
-    <p>Survolez un CLPE pour afficher son nom.</p>
+    <p>Contours visibles :</p>
+    <ul>
+        <li>Régions</li>
+        <li>Départements</li>
+        <li>Communes (discret)</li>
+        <li>CLPE (fusionnés)</li>
+    </ul>
 </div>
 
 <div id="map"></div>
@@ -48,15 +53,15 @@ body {
 const map = L.map('map').setView([46.6, 2.5], 6);
 
 // ------------------------------------------------------------
-// 2. Fond IGN WMTS (DOM déjà intégrés)
+// 2. Fond IGN XYZ
 // ------------------------------------------------------------
-L.tileLayer.wmts("https://data.geopf.fr/wmts", {
-    layer: "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2",
-    tilematrixSet: "PM",
-    format: "image/png",
-    style: "normal",
-    attribution: "© IGN - GeoPlateforme"
-}).addTo(map);
+L.tileLayer(
+    "https://data.geopf.fr/tiles/PLANIGNV2/{z}/{x}/{y}.png",
+    {
+        attribution: "© IGN - GeoPlateforme",
+        maxZoom: 18
+    }
+).addTo(map);
 
 // ------------------------------------------------------------
 // 3. Chargement du CSV
@@ -68,23 +73,61 @@ Papa.parse("communes_clpe.csv", {
     header: true,
     complete: function(results) {
         csvData = results.data;
-        loadCommunes();
+        loadGeoLayers();
     }
 });
 
 // ------------------------------------------------------------
-// 4. Chargement des communes Admin Express (nécessaire uniquement pour géométrie)
+// 4. Chargement des couches Admin Express
 // ------------------------------------------------------------
-async function loadCommunes() {
-    const communes = await fetch(
-        "https://data.geopf.fr/annexes/geojson/adminexpress/communes.geojson"
-    ).then(r => r.json());
+async function loadGeoLayers() {
+    const [regions, departements, communes] = await Promise.all([
+        fetch("https://data.geopf.fr/annexes/geojson/adminexpress/regions.geojson").then(r => r.json()),
+        fetch("https://data.geopf.fr/annexes/geojson/adminexpress/departements.geojson").then(r => r.json()),
+        fetch("https://data.geopf.fr/annexes/geojson/adminexpress/communes.geojson").then(r => r.json())
+    ]);
 
+    drawRegions(regions);
+    drawDepartements(departements);
+    drawCommunes(communes);
     aggregateCLPE(communes);
 }
 
 // ------------------------------------------------------------
-// 5. Fusion des communes par CLPE
+// 5. Styles des couches
+// ------------------------------------------------------------
+function drawRegions(regions) {
+    L.geoJSON(regions, {
+        style: {
+            color: "#002b55",
+            weight: 3,
+            fillOpacity: 0
+        }
+    }).addTo(map);
+}
+
+function drawDepartements(depts) {
+    L.geoJSON(depts, {
+        style: {
+            color: "#0055aa",
+            weight: 1.8,
+            fillOpacity: 0
+        }
+    }).addTo(map);
+}
+
+function drawCommunes(communes) {
+    L.geoJSON(communes, {
+        style: {
+            color: "#999",
+            weight: 0.4,
+            fillOpacity: 0
+        }
+    }).addTo(map);
+}
+
+// ------------------------------------------------------------
+// 6. Fusion des communes par CLPE
 // ------------------------------------------------------------
 function aggregateCLPE(communesGeo) {
     const mapCLPE = {};
@@ -106,21 +149,21 @@ function aggregateCLPE(communesGeo) {
 }
 
 // ------------------------------------------------------------
-// 6. Coloration des CLPE
+// 7. Palette de bleus
 // ------------------------------------------------------------
 function generateBluePalette(n) {
     const colors = [];
     for (let i = 0; i < n; i++) {
         const hue = 210;
-        const sat = 40 + (i * 40 / n);
-        const light = 40 + (i * 40 / n);
+        const sat = 35 + (i * 45 / n);
+        const light = 45 + (i * 35 / n);
         colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
     }
     return colors;
 }
 
 // ------------------------------------------------------------
-// 7. Affichage des CLPE
+// 8. Affichage des CLPE fusionnés
 // ------------------------------------------------------------
 function drawCLPE(mapCLPE) {
     const clpeNames = Object.keys(mapCLPE);
@@ -144,10 +187,10 @@ function drawCLPE(mapCLPE) {
 
         L.geoJSON(merged, {
             style: {
-                color: "#003366",
-                weight: 1,
+                color: "#001f3f",
+                weight: 2,
                 fillColor: colors[i],
-                fillOpacity: 0.55
+                fillOpacity: 0.45
             },
             onEachFeature: (feat, layer) => {
                 layer.bindTooltip(feat.properties.CLPE, { sticky: true });
