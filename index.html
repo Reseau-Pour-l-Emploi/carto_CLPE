@@ -1,204 +1,409 @@
+### Index HTML GeoPackage Lambert‑93
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Carte CLPE 2026 – WFS GéoPlateforme</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <title>CLPE – Carte (GeoPackage EPSG:2154)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<style>
-body {
-    margin: 0;
-    display: flex;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-}
-#sidebar {
-    width: 260px;
-    padding: 15px;
-    background: #f5f5f5;
-    border-right: 1px solid #ccc;
-}
-#map {
-    flex: 1;
-}
-</style>
+  <!-- Proj4 + Proj4Leaflet (pour EPSG:2154 / Lambert-93) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+  <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
+
+  <!-- GeoPackage loader -->
+  <script src="https://unpkg.com/@ngageoint/geopackage/dist/geopackage.min.js"></script>
+
+  <!-- PapaParse pour CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; font-family: Arial, Helvetica, sans-serif; }
+    #sidebar {
+      width: 300px;
+      padding: 12px;
+      background: #f7f7f7;
+      border-right: 1px solid #ddd;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+    #map { flex: 1; height: 100vh; }
+    h1 { font-size: 18px; margin: 6px 0 12px 0; }
+    .small { font-size: 13px; color: #444; margin-bottom: 8px; }
+    .btn { display:inline-block; padding:6px 10px; background:#0f4395; color:#fff; border-radius:4px; text-decoration:none; cursor:pointer; margin-top:6px; }
+    label { display:block; margin-top:8px; font-weight:600; }
+    input[type="file"] { margin-top:6px; }
+    .status { margin-top:10px; font-size:13px; color:#333; }
+    .legend { margin-top:12px; font-size:13px; }
+    .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .color-box { width:18px; height:12px; border:1px solid #999; }
+  </style>
 </head>
-
 <body>
 
-<div id="sidebar">
-    <h2>CLPE – France 2026</h2>
-    <p>Données Admin Express 2026 via WFS privé GéoPlateforme</p>
-    <p>Contours visibles :</p>
-    <ul>
-        <li>Régions 2026</li>
-        <li>Départements 2026</li>
-        <li>Communes 2026</li>
-        <li>CLPE fusionnés</li>
-    </ul>
-</div>
+  <div id="sidebar">
+    <h1>CLPE – Visualisation (GeoPackage EPSG:2154)</h1>
+    <div class="small">Fichier GeoPackage détecté : <strong>ADE-COG-CARTO-PE_4-0_GPKG_LAMB93_FXX-ED2026-01-01.gpkg</strong></div>
 
-<div id="map"></div>
+    <label>1) Charger un GeoPackage local (optionnel)</label>
+    <input id="gpkgFileInput" type="file" accept=".gpkg" />
+
+    <label>2) Ou utiliser le GeoPackage embarqué</label>
+    <button id="useEmbedded" class="btn">Charger le fichier embarqué</button>
+
+    <label>3) CSV CLPE (INSEE_COM, CLPE)</label>
+    <input id="csvFileInput" type="file" accept=".csv" />
+
+    <div class="status" id="status">Statut : en attente</div>
+
+    <div class="legend" id="legend">
+      <strong>Légende</strong>
+      <div class="legend-item"><div class="color-box" style="background:#cfe8ff"></div> CLPE fusionné</div>
+      <div class="legend-item"><div class="color-box" style="background:#ffffff; border:2px solid #002b55"></div> Région</div>
+      <div class="legend-item"><div class="color-box" style="background:#ffffff; border:1px solid #0055aa"></div> Département</div>
+      <div class="legend-item"><div class="color-box" style="background:#ffffff; border:1px dashed #999"></div> Commune</div>
+    </div>
+  </div>
+
+  <div id="map"></div>
 
 <script>
-// ------------------------------------------------------------
-// 1. Carte Leaflet
-// ------------------------------------------------------------
-const map = L.map('map').setView([46.6, 2.5], 6);
+/* ============================================================
+   Configuration et constantes
+   ============================================================ */
 
-// ------------------------------------------------------------
-// 2. Fond OSM
-// ------------------------------------------------------------
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    attribution: "© OpenStreetMap contributors"
-}).addTo(map);
+const EMBEDDED_GPKG = "ADE-COG-CARTO-PE_4-0_GPKG_LAMB93_FXX-ED2026-01-01.gpkg";
+const EXPECTED_LAYER_NAMES = ["commune", "communes", "COMMUNE", "COMMUNES", "COMMUNE_CARTO_PE", "COMMUNE_CARTO"]; // essais
+const EXPECTED_DEPT_NAMES = ["departement", "departements", "DEPARTEMENT", "DEPARTEMENTS", "DEPARTEMENT_CARTO"];
+const EXPECTED_REGION_NAMES = ["region", "regions", "REGION", "REGIONS", "REGION_CARTO"];
 
-// ------------------------------------------------------------
-// 3. Clé API + hash (à remplacer par les tiens)
-// ------------------------------------------------------------
-const APIKEY = "5yPRxA790EJkA0zXABQ5yPCG8OSIdHx3";
-const HASH   = "5ae91aa3-5c12-4151-8b8c-6c81efe04eeb";
-
-// ------------------------------------------------------------
-// 4. URLs WFS Admin Express 2026 (privé)
-// ------------------------------------------------------------
-function wfsUrl(typeName) {
-    return `https://data.geopf.fr/private/wfs/?service=WFS&version=2.0.0&request=GetFeature&typeName=${typeName}&outputFormat=application/json&apikey=${APIKEY}&hash=${HASH}`;
-}
-
-const URL_REGIONS = wfsUrl("ADMINEXPRESS:region");
-const URL_DEPTS   = wfsUrl("ADMINEXPRESS:departement");
-const URL_COM     = wfsUrl("ADMINEXPRESS:commune");
-
-// ------------------------------------------------------------
-// 5. Chargement du CSV CLPE
-// ------------------------------------------------------------
-let csvData = null;
-
-Papa.parse("communes_clpe.csv", {
-    download: true,
-    header: true,
-    complete: function(results) {
-        csvData = results.data;
-        loadWFS();
+/* ------------------------------------------------------------
+   Définition du CRS EPSG:2154 (Lambert-93) via proj4
+   ------------------------------------------------------------ */
+proj4.defs("EPSG:2154","+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +units=m +no_defs");
+const crs2154 = new L.Proj.CRS("EPSG:2154",
+    proj4.defs("EPSG:2154"),
+    {
+      resolutions: (function(){
+        // résolutions raisonnables pour Lambert-93 (z ~ 0..14)
+        const res = [];
+        for (let i=0;i<=14;i++) res.push(8192 / Math.pow(2,i));
+        return res;
+      })(),
+      origin: [ -4000000, 12000000 ]
     }
+);
+
+/* ------------------------------------------------------------
+   Initialisation de la carte en EPSG:2154
+   ------------------------------------------------------------ */
+const map = L.map('map', {
+  crs: crs2154,
+  center: [46.6, 2.5],
+  zoom: 6
 });
 
-// ------------------------------------------------------------
-// 6. Chargement WFS 2026
-// ------------------------------------------------------------
-async function loadWFS() {
-    const [regions, depts, communes] = await Promise.all([
-        fetch(URL_REGIONS).then(r => r.json()),
-        fetch(URL_DEPTS).then(r => r.json()),
-        fetch(URL_COM).then(r => r.json())
-    ]);
+/* ------------------------------------------------------------
+   Fond de carte (WMTS IGN) — peut nécessiter clé selon usage.
+   Si indisponible, la carte restera sans fond.
+   ------------------------------------------------------------ */
+const IGN_WMTS = L.tileLayer(
+  "https://wxs.ign.fr/essentiels/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&style=normal&tilematrixset=PM&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image/png&TileMatrix={z}&TileCol={x}&TileRow={y}",
+  { maxZoom: 14, attribution: "© IGN" }
+);
+IGN_WMTS.addTo(map);
 
-    drawRegions(regions);
-    drawDepartements(depts);
-    drawCommunes(communes);
-    aggregateCLPE(communes);
+/* ------------------------------------------------------------
+   Couches Leaflet (groupes)
+   ------------------------------------------------------------ */
+const layerRegions = L.geoJSON(null, { style: { color: "#002b55", weight: 3, fillOpacity: 0 } }).addTo(map);
+const layerDepartements = L.geoJSON(null, { style: { color: "#0055aa", weight: 1.6, fillOpacity: 0 } }).addTo(map);
+const layerCommunes = L.geoJSON(null, { style: { color: "#999", weight: 0.4, fillOpacity: 0 } }).addTo(map);
+const layerCLPE = L.geoJSON(null, {
+  style: (feat) => ({ color: "#001f3f", weight: 1.5, fillColor: "#cfe8ff", fillOpacity: 0.5 }),
+  onEachFeature: (f, l) => {
+    const name = f.properties && (f.properties.NOM || f.properties.nom || f.properties.NAME || f.properties.name || f.properties.COMMUNE);
+    l.bindTooltip(name || f.properties.CLPE || "CLPE", { sticky: true });
+  }
+}).addTo(map);
+
+/* ------------------------------------------------------------
+   Utilitaires : recherche flexible de propriété INSEE
+   ------------------------------------------------------------ */
+function getInseeFromProps(props) {
+  if (!props) return null;
+  const keys = Object.keys(props).map(k => k.toLowerCase());
+  const mapping = {
+    insee: ["insee","insee_com","insee_com_5","code_insee","code_insee_commune","commune_insee"],
+    code: ["code","code_insee","code_commune"],
+    id: ["id","gid"]
+  };
+  for (const k of Object.keys(props)) {
+    const kl = k.toLowerCase();
+    if (mapping.insee.includes(kl)) return String(props[k]).padStart(5,"0");
+  }
+  // fallback: try common names
+  if (props.INSEE_COM) return String(props.INSEE_COM).padStart(5,"0");
+  if (props.INSEE) return String(props.INSEE).padStart(5,"0");
+  if (props.CODGEO) return String(props.CODGEO).padStart(5,"0");
+  return null;
 }
 
-// ------------------------------------------------------------
-// 7. Styles des couches
-// ------------------------------------------------------------
-function drawRegions(regions) {
-    L.geoJSON(regions, {
-        style: { color: "#002b55", weight: 3, fillOpacity: 0 }
-    }).addTo(map);
+/* ============================================================
+   Chargement du GeoPackage
+   ============================================================ */
+
+async function openGeoPackageFromArrayBuffer(arrayBuffer) {
+  // window.GeoPackage fourni par @ngageoint/geopackage
+  const gpkg = await window.GeoPackage.open(arrayBuffer);
+  return gpkg;
 }
 
-function drawDepartements(depts) {
-    L.geoJSON(depts, {
-        style: { color: "#0055aa", weight: 1.8, fillOpacity: 0 }
-    }).addTo(map);
+function findLayerName(gpkg, candidates) {
+  // gpkg.getFeatureTables() retourne la liste des tables
+  const tables = gpkg.getFeatureTables ? gpkg.getFeatureTables() : (gpkg.getTables ? gpkg.getTables() : []);
+  if (!tables || tables.length === 0) return null;
+  // normaliser
+  const lowerTables = tables.map(t => ({ raw: t, lower: String(t).toLowerCase() }));
+  for (const c of candidates) {
+    const lc = c.toLowerCase();
+    const found = lowerTables.find(t => t.lower === lc || t.lower.indexOf(lc) !== -1);
+    if (found) return found.raw;
+  }
+  // fallback: return first table that looks like a geometry table
+  return tables[0];
 }
 
-function drawCommunes(communes) {
-    L.geoJSON(communes, {
-        style: { color: "#999", weight: 0.4, fillOpacity: 0 }
-    }).addTo(map);
-}
+async function gpkgLayerToGeoJSON(gpkg, tableName) {
+  // getFeatureDao + queryForEach usage
+  const dao = gpkg.getFeatureDao(tableName);
+  if (!dao) return null;
 
-// ------------------------------------------------------------
-// 8. Fusion des communes par CLPE
-// ------------------------------------------------------------
-function aggregateCLPE(communesGeo) {
-    const mapCLPE = {};
-
-    csvData.forEach(row => {
-        const code = row.INSEE_COM;
-        const clpe = row.CLPE;
-
-        if (!mapCLPE[clpe]) mapCLPE[clpe] = [];
-
-        const match = communesGeo.features.find(
-            f => f.properties.insee_com === code
-        );
-
-        if (match) mapCLPE[clpe].push(match);
-    });
-
-    drawCLPE(mapCLPE);
-}
-
-// ------------------------------------------------------------
-// 9. Palette de bleus
-// ------------------------------------------------------------
-function generateBluePalette(n) {
-    const colors = [];
-    for (let i = 0; i < n; i++) {
-        const hue = 210;
-        const sat = 35 + (i * 45 / n);
-        const light = 45 + (i * 35 / n);
-        colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
+  const features = [];
+  // queryForEach returns rows; getRowAsGeoJSON(row) converts
+  try {
+    const iterator = dao.queryForEach();
+    for (const row of iterator) {
+      // some builds return GeoJSON directly
+      if (row && row.geometry && row.geometry.toGeoJSON) {
+        features.push(row.geometry.toGeoJSON());
+      } else {
+        // try helper
+        const gj = dao.getRowAsGeoJSON ? dao.getRowAsGeoJSON(row) : null;
+        if (gj) {
+          // ensure properties exist
+          if (!gj.properties) gj.properties = {};
+          features.push(gj);
+        } else {
+          // last resort: try toString
+          // skip
+        }
+      }
     }
-    return colors;
+  } catch (err) {
+    // fallback: use queryForAll and convert
+    const rows = dao.queryForAll();
+    for (const r of rows) {
+      const gj = dao.getRowAsGeoJSON ? dao.getRowAsGeoJSON(r) : null;
+      if (gj) features.push(gj);
+    }
+  }
+
+  return { type: "FeatureCollection", features: features };
 }
 
-// ------------------------------------------------------------
-// 10. Affichage des CLPE fusionnés
-// ------------------------------------------------------------
-function drawCLPE(mapCLPE) {
-    const clpeNames = Object.keys(mapCLPE);
-    const colors = generateBluePalette(clpeNames.length);
+/* ============================================================
+   Chargement principal : GPkg + CSV CLPE
+   ============================================================ */
 
-    clpeNames.forEach((clpe, i) => {
-        const features = mapCLPE[clpe];
+let csvCLPE = null;
 
-        const merged = {
-            type: "Feature",
-            properties: { CLPE: clpe },
-            geometry: {
-                type: "MultiPolygon",
-                coordinates: features.flatMap(f =>
-                    f.geometry.type === "Polygon"
-                        ? [f.geometry.coordinates]
-                        : f.geometry.coordinates
-                )
-            }
-        };
+function setStatus(text) {
+  document.getElementById("status").textContent = "Statut : " + text;
+}
 
-        L.geoJSON(merged, {
-            style: {
-                color: "#001f3f",
-                weight: 2,
-                fillColor: colors[i],
-                fillOpacity: 0.45
-            },
-            onEachFeature: (feat, layer) => {
-                layer.bindTooltip(feat.properties.CLPE, { sticky: true });
-            }
-        }).addTo(map);
+/* Chargement CSV depuis input file */
+document.getElementById("csvFileInput").addEventListener("change", function(e){
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  setStatus("Lecture du CSV CLPE...");
+  Papa.parse(f, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      csvCLPE = results.data;
+      setStatus("CSV CLPE chargé (" + csvCLPE.length + " lignes).");
+      // si GPkg déjà chargé, on peut lancer l'agrégation
+      if (window._gpkgLoadedGeoJSON) aggregateCLPE(window._gpkgLoadedGeoJSON.communes);
+    },
+    error: function(err) {
+      setStatus("Erreur lecture CSV : " + err.message);
+    }
+  });
+});
+
+/* Bouton pour charger le gpkg embarqué */
+document.getElementById("useEmbedded").addEventListener("click", function(){
+  loadGeoPackageByUrl(EMBEDDED_GPKG);
+});
+
+/* Input pour charger un gpkg local */
+document.getElementById("gpkgFileInput").addEventListener("change", function(e){
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  setStatus("Lecture du GeoPackage local...");
+  reader.onload = async function(ev) {
+    const ab = ev.target.result;
+    await processGeoPackageArrayBuffer(ab);
+  };
+  reader.onerror = function() {
+    setStatus("Erreur lecture du fichier GeoPackage local.");
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+/* Charger par URL (fichier embarqué dans le même dossier) */
+async function loadGeoPackageByUrl(url) {
+  setStatus("Téléchargement du GeoPackage : " + url);
+  try {
+    const ab = await fetch(url).then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.arrayBuffer();
     });
+    await processGeoPackageArrayBuffer(ab);
+  } catch (err) {
+    setStatus("Erreur téléchargement GeoPackage : " + err.message);
+  }
 }
+
+/* Traiter ArrayBuffer du GeoPackage */
+async function processGeoPackageArrayBuffer(arrayBuffer) {
+  setStatus("Ouverture du GeoPackage...");
+  try {
+    const gpkg = await openGeoPackageFromArrayBuffer(arrayBuffer);
+    setStatus("GeoPackage ouvert. Recherche des couches...");
+    // trouver noms de couches
+    const layerCommuneName = findLayerName(gpkg, EXPECTED_LAYER_NAMES);
+    const layerDeptName = findLayerName(gpkg, EXPECTED_DEPT_NAMES);
+    const layerRegionName = findLayerName(gpkg, EXPECTED_REGION_NAMES);
+
+    setStatus("Couches trouvées : commune=" + layerCommuneName + " departement=" + layerDeptName + " region=" + layerRegionName);
+
+    // convertir en GeoJSON
+    const communesGeo = await gpkgLayerToGeoJSON(gpkg, layerCommuneName);
+    const deptsGeo = await gpkgLayerToGeoJSON(gpkg, layerDeptName);
+    const regionsGeo = await gpkgLayerToGeoJSON(gpkg, layerRegionName);
+
+    // stocker globalement
+    window._gpkgLoadedGeoJSON = {
+      communes: communesGeo,
+      departements: deptsGeo,
+      regions: regionsGeo
+    };
+
+    // dessiner
+    layerRegions.clearLayers();
+    layerDepartements.clearLayers();
+    layerCommunes.clearLayers();
+    layerCLPE.clearLayers();
+
+    if (regionsGeo) layerRegions.addData(regionsGeo);
+    if (deptsGeo) layerDepartements.addData(deptsGeo);
+    if (communesGeo) layerCommunes.addData(communesGeo);
+
+    setStatus("Couches affichées. Centrage automatique...");
+    // centrer sur l'emprise des régions si dispo
+    try {
+      const bounds = L.geoJSON(regionsGeo || deptsGeo || communesGeo).getBounds();
+      if (bounds && bounds.isValid()) map.fitBounds(bounds.pad(0.05));
+    } catch (e) {}
+
+    // si CSV déjà chargé, lancer agrégation
+    if (csvCLPE) aggregateCLPE(communesGeo);
+
+  } catch (err) {
+    console.error(err);
+    setStatus("Erreur ouverture GeoPackage : " + err.message);
+  }
+}
+
+/* ============================================================
+   Agrégation CLPE : fusion des géométries des communes par CLPE
+   ============================================================ */
+
+function aggregateCLPE(communesGeo) {
+  if (!communesGeo || !csvCLPE) {
+    setStatus("Agrégation CLPE en attente (manque GeoPackage ou CSV).");
+    return;
+  }
+  setStatus("Agrégation CLPE en cours...");
+  // construire index des communes par code INSEE
+  const indexCommune = {};
+  for (const f of communesGeo.features) {
+    const code = getInseeFromProps(f.properties);
+    if (!code) continue;
+    indexCommune[code] = f;
+  }
+
+  // regrouper par CLPE
+  const mapCLPE = {};
+  for (const row of csvCLPE) {
+    // essayer plusieurs noms de colonnes
+    const code = (row.INSEE_COM || row.insee_com || row.INSEE || row.insee || row.code_insee || row.CODGEO || row.codgeo);
+    const clpe = (row.CLPE || row.Clpe || row.clpe || row.CLPE_ID || row.CLPE_NAME || row.CLPE_NAME);
+    if (!code || !clpe) continue;
+    const codeNorm = String(code).padStart(5,"0");
+    const communeFeature = indexCommune[codeNorm];
+    if (!communeFeature) continue;
+    if (!mapCLPE[clpe]) mapCLPE[clpe] = [];
+    mapCLPE[clpe].push(communeFeature);
+  }
+
+  // fusionner géométries (simple concat des coordonnées en MultiPolygon)
+  const mergedFeatures = [];
+  for (const clpeKey of Object.keys(mapCLPE)) {
+    const feats = mapCLPE[clpeKey];
+    const polygons = [];
+    for (const f of feats) {
+      const geom = f.geometry;
+      if (!geom) continue;
+      if (geom.type === "Polygon") polygons.push(geom.coordinates);
+      else if (geom.type === "MultiPolygon") polygons.push(...geom.coordinates);
+      else continue;
+    }
+    if (polygons.length === 0) continue;
+    const merged = {
+      type: "Feature",
+      properties: { CLPE: clpeKey, count: feats.length },
+      geometry: { type: "MultiPolygon", coordinates: polygons }
+    };
+    mergedFeatures.push(merged);
+  }
+
+  const fc = { type: "FeatureCollection", features: mergedFeatures };
+  layerCLPE.clearLayers();
+  layerCLPE.addData(fc);
+  setStatus("Agrégation CLPE terminée (" + mergedFeatures.length + " entités).");
+}
+
+/* ============================================================
+   Initialisation automatique : tenter de charger le fichier embarqué
+   ============================================================ */
+window.addEventListener("load", function(){
+  // tenter de charger le fichier embarqué automatiquement
+  // si le fichier n'existe pas côté serveur, l'appel échouera silencieusement
+  loadGeoPackageByUrl(EMBEDDED_GPKG);
+  setStatus("Tentative de chargement du GeoPackage embarqué...");
+});
 </script>
 
 </body>
 </html>
+```
