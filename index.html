@@ -217,7 +217,7 @@
 <!-- ═══════════════ LEGEND ═══════════════ -->
 <div id="legend">
   <h4>🗂 Légende</h4>
-  <div class="leg-row"><div class="leg-sw" style="background:#bfdbfe;border-color:#1d4ed8;border-width:1.5px"></div><span class="leg-lbl">CLPE (polygone)</span></div>
+  <div class="leg-row"><div class="leg-sw" style="background:#bfdbfe;border-color:#ffffff;border-width:2px"></div><span class="leg-lbl">CLPE (polygone)</span></div>
   <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#64748b;border-width:1.5px"></div><span class="leg-lbl">Département</span></div>
   <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#1e3a8a;border-width:2px"></div><span class="leg-lbl">Région</span></div>
   <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#cbd5e1;border-width:0.5px"></div><span class="leg-lbl">Commune (zoom ≥ 10)</span></div>
@@ -397,8 +397,9 @@ function sanitizeFeats(feats) {
 async function dissolveByClpe(commFeats, assocFeats, mapping) {
   setStep('Conversion en topologie (TopoJSON)…', 68);
 
-  // Combine and sanitize
-  const all = sanitizeFeats([...commFeats, ...assocFeats]);
+  // N'utiliser QUE les communes (pas les associées/déléguées dont les géométries
+  // se superposent à celles des communes parentes et créent des contours faux)
+  const all = sanitizeFeats([...commFeats]);
 
   // Tag each feature with its CLPE
   all.forEach(f => {
@@ -598,15 +599,16 @@ function addLayers(map, clpeFC, deptFC, regionFC, colorMap, opts = {}) {
       return {
         fillColor  : CFG.blues[ci],
         fillOpacity: 0.55,
-        color      : CFG.blueStroke[ci],
-        weight     : isInset ? 0.8 : 1.2,
-        opacity    : 0.85,
+        color      : '#ffffff',
+        weight     : isInset ? 1.5 : 2.5,
+        opacity    : 1,
+        dashArray  : null,
       };
     },
     onEachFeature: isInset ? undefined : (f, layer) => {
       layer.bindTooltip(f.properties._clpe, { className: 'tt-clpe', sticky: true, offset:[8,0] });
       layer.on({
-        mouseover: e => { e.target.setStyle({ fillOpacity: 0.82, weight: 2.2 }); e.target.bringToFront(); },
+        mouseover: e => { e.target.setStyle({ fillOpacity: 0.82, weight: 3.5, color: '#ffffff' }); e.target.bringToFront(); },
         mouseout : e => { clpeGJ.resetStyle(e.target); },
       });
     },
