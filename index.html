@@ -339,36 +339,69 @@ async function fetchAllWFS(typeName, label, p0, p1) {
 }
 
 /* ══════════════════════════════════════════════════════
+   EXTRACT INSEE CODE  (robuste, multi-champs WFS)
+══════════════════════════════════════════════════════ */
+function extractInsee(props) {
+  if (!props) return '';
+  // Champs connus d'ADMINEXPRESS-COG-CARTO
+  const raw =
+    props.INSEE_COM       ||   // champ standard commune
+    props.insee_com       ||   // variante minuscule
+    props.CODE_INSEE      ||
+    props.code_insee      ||
+    props.CODE            ||
+    props.code            ||
+    props.ID              ||   // ex: "COMMUNE_01001" → on extrait les 5 derniers chiffres
+    '';
+  const str = String(raw).trim();
+  // Si c'est un identifiant style "COMMUNE_01001", extraire la partie numérique finale
+  const m = str.match(/(\d{5})$/);
+  if (m) return m[1];
+  // Sinon padStart classique
+  return str.replace(/\D/g, '').padStart(5, '0').slice(-5);
+}
+
+/* ══════════════════════════════════════════════════════
    CSV LOADER
 ══════════════════════════════════════════════════════ */
 async function loadCSV() {
   setStep('Chargement des données CLPE…', 2);
   const response = await fetch(CLPE_CSV_URL);
   if (!response.ok) throw new Error(`CSV CLPE → HTTP ${response.status}`);
+
+  // FIX : suppression du BOM UTF-8 (\uFEFF) éventuel avant parsing
   const csvText = (await response.text()).replace(/^\uFEFF/, '');
-  
-  // ✅ Suppression du BOM UTF-8 (\uFEFF) éventuel
-  csvText = csvText.replace(/^\uFEFF/, '');
-  
+
   const parsed = Papa.parse(csvText, {
     header: true,
     delimiter: ';',
-    skipEmptyLines: true
+    skipEmptyLines: true,
   });
+
   if (parsed.errors?.length) {
     const firstError = parsed.errors[0];
     throw new Error(`CSV CLPE invalide (${firstError.message})`);
   }
 
+  // DEBUG : affiche les colonnes détectées et les premières lignes
+  console.info('[CSV] colonnes détectées :', parsed.meta.fields);
+  console.info('[CSV] 3 premières lignes :', parsed.data.slice(0, 3));
+
   const data = {};
   for (const row of parsed.data) {
-    const insee = String(row.INSEE_COM || '').trim().padStart(5, '0');
-    const clpe = String(row.CLPE || '').trim();
-    if (!insee || !clpe) continue;
+    // Normalise la clé de colonne (résistant au BOM résiduel ou espace)
+    const inseeRaw = row['INSEE_COM'] ?? row['\uFEFFINSEE_COM'] ?? row['insee_com'] ?? '';
+    const clpeRaw  = row['CLPE']      ?? row['clpe']            ?? '';
+    const insee    = String(inseeRaw).trim().padStart(5, '0');
+    const clpe     = String(clpeRaw).trim();
+    if (!insee || !clpe || insee === '00000') continue;
     data[insee] = clpe;
   }
 
   console.info(`[CSV] ${Object.keys(data).length} entrées chargées depuis ${CLPE_CSV_URL}.`);
+  if (Object.keys(data).length === 0) {
+    console.error('[CSV] ⚠️ Mapping vide ! Vérifiez les noms de colonnes ci-dessus.');
+  }
   return data;
 }
 
@@ -380,12 +413,14 @@ function buildFullMapping(csvMap, assocFeats) {
   const full = { ...csvMap };
   assocFeats.forEach(f => {
     const p = f.properties || {};
-    const code   = String(p.INSEE_COM                || p.code || '').trim().padStart(5,'0');
-    const parent = String(p.INSEE_COM_RATTACHEMENT    || '').trim().padStart(5,'0');
+    const code   = extractInsee(p) ||
+                   String(p.INSEE_COM || p.code || '').trim().padStart(5, '0');
+    const parent = String(p.INSEE_COM_RATTACHEMENT || '').trim().padStart(5, '0');
     if (code && !full[code] && parent && full[parent]) {
       full[code] = full[parent];
     }
   });
+  console.info(`[CSV] mapping étendu : ${Object.keys(full).length} entrées (dont communes assoc.)`);
   return full;
 }
 
@@ -410,24 +445,44 @@ function sanitizeFeats(feats) {
    DISSOLVE BY CLPE  (turf.union commune par commune)
 ══════════════════════════════════════════════════════ */
 async function dissolveByClpe(commFeats, mapping) {
-  setStep('Attribution des CLPE aux communes\u2026', 66);
+  setStep('Attribution des CLPE aux communes…', 66);
+
+  // DEBUG : affiche les propriétés de la 1ère commune WFS
+  if (commFeats.length > 0) {
+    console.info('[WFS] exemple propriétés commune :', commFeats[0].properties);
+    console.info('[WFS] total communes chargées    :', commFeats.length);
+  } else {
+    console.error('[WFS] ⚠️ Aucune commune reçue du WFS !');
+  }
 
   // Grouper les communes par CLPE
   const groups = {};
   let assigned = 0;
+  let unmatched = 0;
   for (const f of commFeats) {
     if (!f.geometry) continue;
-    const code = String(f.properties?.INSEE_COM || f.properties?.code || '').trim();
-    const clpe = mapping[code] || mapping[code.padStart(5,'0')] || null;
-    if (!clpe) continue;
+    // FIX : extraction robuste du code INSEE (multi-champs)
+    const code = extractInsee(f.properties);
+    const clpe = mapping[code] || null;
+    if (!clpe) { unmatched++; continue; }
     if (!groups[clpe]) groups[clpe] = [];
     groups[clpe].push({ type: 'Feature', geometry: f.geometry, properties: {} });
     assigned++;
   }
 
   const clpeNames = Object.keys(groups);
-  console.info(`[CLPE] ${assigned} communes assignées \u2192 ${clpeNames.length} CLPE`);
-  setStep(`Fusion de ${assigned} communes en ${clpeNames.length} CLPE\u2026`, 68);
+  console.info(`[CLPE] ${assigned} communes assignées → ${clpeNames.length} CLPE (${unmatched} non trouvées dans CSV)`);
+
+  if (assigned === 0) {
+    // Affiche des exemples de codes WFS vs CSV pour diagnostiquer
+    const sampleWFS = commFeats.slice(0, 5).map(f => extractInsee(f.properties));
+    const sampleCSV = Object.keys(mapping).slice(0, 5);
+    console.error('[CLPE] ⚠️ 0 communes assignées !');
+    console.error('[CLPE]   Codes WFS  (exemples) :', sampleWFS);
+    console.error('[CLPE]   Codes CSV  (exemples) :', sampleCSV);
+  }
+
+  setStep(`Fusion de ${assigned} communes en ${clpeNames.length} CLPE…`, 68);
   await new Promise(r => setTimeout(r, 0));
 
   const features = [];
@@ -437,7 +492,7 @@ async function dissolveByClpe(commFeats, mapping) {
     const comms = groups[clpe];
 
     if (i % 5 === 0) {
-      setStep(`Fusion CLPE ${i + 1} / ${clpeNames.length}\u2026`, 68 + (i / clpeNames.length) * 17);
+      setStep(`Fusion CLPE ${i + 1} / ${clpeNames.length}…`, 68 + (i / clpeNames.length) * 17);
       await new Promise(r => setTimeout(r, 0));
     }
 
@@ -461,7 +516,7 @@ async function dissolveByClpe(commFeats, mapping) {
    ADJACENCY  (bbox overlap entre polygones CLPE dissous)
 ══════════════════════════════════════════════════════ */
 function buildAdjacency(clpeFC) {
-  setStep('Calcul du graphe d\'adjacence\u2026', 86);
+  setStep('Calcul du graphe d\'adjacence…', 86);
   const feats  = clpeFC.features;
   const bboxes = feats.map(f => { try { return turf.bbox(f); } catch(_) { return null; } });
   const adj    = {};
@@ -718,12 +773,13 @@ async function main() {
   const commFeats   = await fetchAllWFS(CFG.layers.commune,'Chargement des communes',       16,  55);
   const assocFeats  = await fetchAllWFS(CFG.layers.assoc,  'Chargement des communes associées/déléguées', 55, 65);
 
-  // ── 4. Build mapping ──
+  // ── 4. Build mapping (CSV + propagation communes associées) ──
+  // FIX : buildFullMapping était défini mais jamais appelé
   setStep('Construction du mapping INSEE → CLPE…', 66);
   await new Promise(r => setTimeout(r, 0));
-  const fullMapping = csvMap; // mapping direct depuis CSV embarqué
+  const fullMapping = buildFullMapping(csvMap, assocFeats);
 
-  // ── 5. Dissolve (TopoJSON) ──
+  // ── 5. Dissolve ──
   const clpeFC = await dissolveByClpe(commFeats, fullMapping);
 
   // ── 6. Adjacency (bbox-based sur polygones CLPE) ──
@@ -733,10 +789,8 @@ async function main() {
 
   // ── 7. Graph coloring ──
   const colorIdxMap = greedyColor(adj);
-  // Rebuild as { clpeName: colorIndex }
   const colorMap = {};
   for (const [clpe, idx] of Object.entries(colorIdxMap)) colorMap[clpe] = idx;
-  // Also store color index in feature properties for fast lookup
   clpeFC.features.forEach(f => {
     f.properties._ci = colorMap[f.properties._clpe] ?? 0;
   });
