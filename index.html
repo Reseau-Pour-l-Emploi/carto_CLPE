@@ -53,15 +53,12 @@ body {
 const map = L.map('map').setView([46.6, 2.5], 6);
 
 // ------------------------------------------------------------
-// 2. Fond IGN XYZ
+// 2. Fond OSM (fonctionne immédiatement)
 // ------------------------------------------------------------
-L.tileLayer(
-    "https://data.geopf.fr/tiles/PLANIGNV2/{z}/{x}/{y}.png",
-    {
-        attribution: "© IGN - GeoPlateforme",
-        maxZoom: 18
-    }
-).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18,
+    attribution: "© OpenStreetMap contributors"
+}).addTo(map);
 
 // ------------------------------------------------------------
 // 3. Chargement du CSV
