@@ -2,47 +2,25 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Carte des Comités Locaux pour l’Emploi</title>
+<title>Contours Admin Express + OSM</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
 <style>
 body {
     margin: 0;
-    display: flex;
     height: 100vh;
-    font-family: Arial, sans-serif;
 }
-
-#sidebar {
-    width: 260px;
-    padding: 15px;
-    background: #f5f5f5;
-    border-right: 1px solid #ccc;
-}
-
 #map {
-    flex: 1;
+    width: 100%;
+    height: 100%;
 }
 </style>
 </head>
 
 <body>
-
-<div id="sidebar">
-    <h2>Comités Locaux pour l’Emploi</h2>
-    <p>Contours visibles :</p>
-    <ul>
-        <li>Régions</li>
-        <li>Départements</li>
-        <li>Communes (discret)</li>
-        <li>CLPE (fusionnés)</li>
-    </ul>
-</div>
 
 <div id="map"></div>
 
@@ -53,7 +31,7 @@ body {
 const map = L.map('map').setView([46.6, 2.5], 6);
 
 // ------------------------------------------------------------
-// 2. Fond OSM (fonctionne immédiatement)
+// 2. Fond OSM
 // ------------------------------------------------------------
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
@@ -61,39 +39,22 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // ------------------------------------------------------------
-// 3. Chargement du CSV
+// 3. URLs Admin Express (VERSION 2024 FONCTIONNELLE)
 // ------------------------------------------------------------
-let csvData = null;
-
-Papa.parse("communes_clpe.csv", {
-    download: true,
-    header: true,
-    complete: function(results) {
-        csvData = results.data;
-        loadGeoLayers();
-    }
-});
+const URL_REGIONS = "https://data.geopf.fr/annexes/geojson/adminexpress_cog_2024/regions.geojson";
+const URL_DEPTS   = "https://data.geopf.fr/annexes/geojson/adminexpress_cog_2024/departements.geojson";
+const URL_COM     = "https://data.geopf.fr/annexes/geojson/adminexpress_cog_2024/communes.geojson";
 
 // ------------------------------------------------------------
-// 4. Chargement des couches Admin Express
+// 4. Chargement des couches
 // ------------------------------------------------------------
-async function loadGeoLayers() {
-    const [regions, departements, communes] = await Promise.all([
-        fetch("https://data.geopf.fr/annexes/geojson/adminexpress/regions.geojson").then(r => r.json()),
-        fetch("https://data.geopf.fr/annexes/geojson/adminexpress/departements.geojson").then(r => r.json()),
-        fetch("https://data.geopf.fr/annexes/geojson/adminexpress/communes.geojson").then(r => r.json())
-    ]);
+Promise.all([
+    fetch(URL_REGIONS).then(r => r.json()),
+    fetch(URL_DEPTS).then(r => r.json()),
+    fetch(URL_COM).then(r => r.json())
+]).then(([regions, depts, communes]) => {
 
-    drawRegions(regions);
-    drawDepartements(departements);
-    drawCommunes(communes);
-    aggregateCLPE(communes);
-}
-
-// ------------------------------------------------------------
-// 5. Styles des couches
-// ------------------------------------------------------------
-function drawRegions(regions) {
+    // Régions
     L.geoJSON(regions, {
         style: {
             color: "#002b55",
@@ -101,9 +62,8 @@ function drawRegions(regions) {
             fillOpacity: 0
         }
     }).addTo(map);
-}
 
-function drawDepartements(depts) {
+    // Départements
     L.geoJSON(depts, {
         style: {
             color: "#0055aa",
@@ -111,9 +71,8 @@ function drawDepartements(depts) {
             fillOpacity: 0
         }
     }).addTo(map);
-}
 
-function drawCommunes(communes) {
+    // Communes
     L.geoJSON(communes, {
         style: {
             color: "#999",
@@ -121,80 +80,8 @@ function drawCommunes(communes) {
             fillOpacity: 0
         }
     }).addTo(map);
-}
 
-// ------------------------------------------------------------
-// 6. Fusion des communes par CLPE
-// ------------------------------------------------------------
-function aggregateCLPE(communesGeo) {
-    const mapCLPE = {};
-
-    csvData.forEach(row => {
-        const code = row.INSEE_COM;
-        const clpe = row.CLPE;
-
-        if (!mapCLPE[clpe]) mapCLPE[clpe] = [];
-
-        const match = communesGeo.features.find(
-            f => f.properties.insee_com === code
-        );
-
-        if (match) mapCLPE[clpe].push(match);
-    });
-
-    drawCLPE(mapCLPE);
-}
-
-// ------------------------------------------------------------
-// 7. Palette de bleus
-// ------------------------------------------------------------
-function generateBluePalette(n) {
-    const colors = [];
-    for (let i = 0; i < n; i++) {
-        const hue = 210;
-        const sat = 35 + (i * 45 / n);
-        const light = 45 + (i * 35 / n);
-        colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
-    }
-    return colors;
-}
-
-// ------------------------------------------------------------
-// 8. Affichage des CLPE fusionnés
-// ------------------------------------------------------------
-function drawCLPE(mapCLPE) {
-    const clpeNames = Object.keys(mapCLPE);
-    const colors = generateBluePalette(clpeNames.length);
-
-    clpeNames.forEach((clpe, i) => {
-        const features = mapCLPE[clpe];
-
-        const merged = {
-            type: "Feature",
-            properties: { CLPE: clpe },
-            geometry: {
-                type: "MultiPolygon",
-                coordinates: features.flatMap(f =>
-                    f.geometry.type === "Polygon"
-                        ? [f.geometry.coordinates]
-                        : f.geometry.coordinates
-                )
-            }
-        };
-
-        L.geoJSON(merged, {
-            style: {
-                color: "#001f3f",
-                weight: 2,
-                fillColor: colors[i],
-                fillOpacity: 0.45
-            },
-            onEachFeature: (feat, layer) => {
-                layer.bindTooltip(feat.properties.CLPE, { sticky: true });
-            }
-        }).addTo(map);
-    });
-}
+});
 </script>
 
 </body>
