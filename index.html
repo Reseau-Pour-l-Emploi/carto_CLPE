@@ -346,7 +346,10 @@ async function loadCSV() {
   const response = await fetch(CLPE_CSV_URL);
   if (!response.ok) throw new Error(`CSV CLPE → HTTP ${response.status}`);
   const csvText = await response.text();
-
+  
+  // ✅ Suppression du BOM UTF-8 (\uFEFF) éventuel
+  csvText = csvText.replace(/^\uFEFF/, '');
+  
   const parsed = Papa.parse(csvText, {
     header: true,
     delimiter: ';',
