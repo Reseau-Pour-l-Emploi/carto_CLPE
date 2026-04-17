@@ -58,7 +58,8 @@
   .btn-reset:hover { background: #1a3a5c; border-color: #4a9fd4; }
 
   /* ── Map ── */
-  #map { flex: 1; }
+  /* background-color = couleur mer CARTO dark (correspondance masque pays) */
+  #map { flex: 1; background: #0c1825; }
 
   /* ── Loading overlay ── */
   #loading {
@@ -88,21 +89,22 @@
 
   /* ── Tooltip CLPE ── */
   .tooltip-clpe {
-    background: rgba(6, 16, 28, 0.96) !important;
+    background: rgba(6, 16, 28, 0.97) !important;
     border: 1px solid #2a6090 !important;
-    color: #a8d8f8 !important;
     font-size: 0.78rem !important;
     padding: 8px 13px !important;
     border-radius: 8px !important;
     box-shadow: 0 4px 18px rgba(0,0,0,0.7) !important;
     pointer-events: none !important;
-    max-width: 280px !important;
-    line-height: 1.5 !important;
+    max-width: 300px !important;
+    line-height: 1.65 !important;
   }
   .tooltip-clpe::before { display: none !important; }
-  .tt-region  { font-size: 0.66rem; color: #ffe070; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 2px; }
-  .tt-dep     { font-size: 0.72rem; color: #f0c060; margin-bottom: 4px; }
-  .tt-clpe    { font-size: 0.84rem; color: #e8f4ff; font-weight: 700; border-top: 1px solid rgba(74,159,212,0.25); padding-top: 4px; margin-top: 2px; }
+  /* Couleurs forcées sur les enfants pour garantir l'affichage */
+  .tooltip-clpe .tt-region { display: block; font-size: 0.66rem; color: #ffe070 !important; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 1px; }
+  .tooltip-clpe .tt-dep    { display: block; font-size: 0.72rem; color: #f5b84a !important; margin-bottom: 1px; }
+  .tooltip-clpe .tt-com    { display: block; font-size: 0.70rem; color: #8ecce8 !important; font-style: italic; margin-bottom: 4px; }
+  .tooltip-clpe .tt-clpe   { display: block; font-size: 0.86rem; color: #e8f4ff !important; font-weight: 700; border-top: 1px solid rgba(74,159,212,0.3); padding-top: 5px; margin-top: 3px; }
 
   /* ── Legend ── */
   #legend {
@@ -137,24 +139,24 @@
 <div id="header">
   <div id="header-title">
     <h1>Comités Locaux pour l'Emploi — France</h1>
-    <p>362 comités locaux · Survolez un territoire pour afficher région, département et comité local · Cliquez pour zoomer</p>
+    <p>362 comités locaux · Survolez pour afficher région, département, commune et comité local · Cliquez pour zoomer</p>
   </div>
   <div id="controls">
     <div class="ctrl-group">
       <label>Région</label>
-      <select id="sel-region" onchange="zoomToSelection('region')">
+      <select id="sel-region" onchange="onRegionChange()">
         <option value="">— Toutes les régions —</option>
       </select>
     </div>
     <div class="ctrl-group">
       <label>Département</label>
-      <select id="sel-dep" onchange="zoomToSelection('dep')">
+      <select id="sel-dep" onchange="onDepChange()">
         <option value="">— Tous les départements —</option>
       </select>
     </div>
     <div class="ctrl-group">
       <label>Comité Local pour l'Emploi</label>
-      <select id="sel-clpe" onchange="zoomToSelection('clpe')">
+      <select id="sel-clpe" onchange="onClpeChange()">
         <option value="">— Tous les CLPE —</option>
       </select>
     </div>
@@ -208,52 +210,123 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
   maxZoom: 18, opacity: 0.55
 }).addTo(map);
 
-// ─── Load all data ────────────────────────────────────────────────────────
+// ─── Data globals ─────────────────────────────────────────────────────────
 let REG_DATA, DEP_DATA, CLPE_DATA, COM_DATA;
 
+// ─── Cascading dropdown structures ───────────────────────────────────────
+let allDeps = [], allClpes = [];
+let regToDeps    = {};   // nom région  → [noms dep]
+let depToClpes   = {};   // nom dep     → [noms CLPE]
+let depToRegName = {};   // nom dep     → nom région
+
+// ─── Commune centroids pour détection au survol ───────────────────────────
+let COM_CENTROIDS = [];
+
+function buildComCentroids() {
+  COM_CENTROIDS = COM_DATA.features.map(function(feat) {
+    var geom = feat.geometry;
+    var ring = geom.type === 'Polygon' ? geom.coordinates[0] : geom.coordinates[0][0];
+    var sx = 0, sy = 0, n = ring.length - 1;
+    for (var i = 0; i < n; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+    return { name: feat.properties.nom_officiel, x: sx / n, y: sy / n };
+  });
+}
+
+// Retourne la commune la plus proche du point (lng, lat)
+function findNearestCommune(lng, lat) {
+  var best = null, bestDist = Infinity;
+  for (var i = 0; i < COM_CENTROIDS.length; i++) {
+    var c = COM_CENTROIDS[i];
+    var d = (c.x - lng) * (c.x - lng) + (c.y - lat) * (c.y - lat);
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  return best ? best.name : null;
+}
+
+// ─── Structures de données pour les dropdowns cascadants ──────────────────
+function buildCascadingMaps() {
+  // code région → nom région
+  var regCodeToName = {};
+  REG_DATA.features.forEach(function(f) {
+    regCodeToName[f.properties.code_insee] = f.properties.nom_officiel;
+  });
+
+  // nom dep → nom région, et reg → [deps]
+  DEP_DATA.features.forEach(function(f) {
+    var dep = f.properties.nom_officiel;
+    var regCode = f.properties.code_insee_de_la_region || '';
+    var regName = regCodeToName[regCode] || '';
+    depToRegName[dep] = regName;
+    if (!regToDeps[regName]) regToDeps[regName] = [];
+    regToDeps[regName].push(dep);
+  });
+
+  // nom dep → [noms CLPE]
+  CLPE_DATA.features.forEach(function(f) {
+    var dep = f.properties.dep || '';
+    if (!depToClpes[dep]) depToClpes[dep] = [];
+    depToClpes[dep].push(f.properties.CLPE);
+  });
+
+  // Tri alphabétique de toutes les listes
+  Object.values(regToDeps).forEach(function(a) { a.sort(); });
+  Object.values(depToClpes).forEach(function(a) { a.sort(); });
+
+  allDeps  = DEP_DATA.features.map(function(f) { return f.properties.nom_officiel; }).sort();
+  allClpes = [...new Set(CLPE_DATA.features.map(function(f) { return f.properties.CLPE; }))].sort();
+}
+
+// ─── Chargement de toutes les données ────────────────────────────────────
 async function loadAll() {
   setProgress(5,  'Chargement des régions…');
-  REG_DATA  = await fetch('data/reg.json').then(r => r.json());
+  REG_DATA  = await fetch('data/reg.json').then(function(r) { return r.json(); });
   setProgress(18, 'Chargement des départements…');
-  DEP_DATA  = await fetch('data/dep.json').then(r => r.json());
+  DEP_DATA  = await fetch('data/dep.json').then(function(r) { return r.json(); });
   setProgress(35, 'Chargement des comités locaux…');
-  CLPE_DATA = await fetch('data/clpe.json').then(r => r.json());
+  CLPE_DATA = await fetch('data/clpe.json').then(function(r) { return r.json(); });
   setProgress(52, 'Chargement des communes…');
-  COM_DATA  = await fetch('data/com.json').then(r => r.json());
+  COM_DATA  = await fetch('data/com.json').then(function(r) { return r.json(); });
+  setProgress(65, 'Préparation des données…');
+  buildComCentroids();
+  buildCascadingMaps();
   setProgress(72, 'Chargement du masque mondial…');
   await addWorldMask();
   setProgress(85, 'Construction des couches…');
   buildLayers();
   setProgress(95, 'Finalisation…');
   populateDropdowns();
-  setTimeout(() => {
+  setTimeout(function() {
     setProgress(100, 'Prêt !');
-    const overlay = document.getElementById('loading');
+    var overlay = document.getElementById('loading');
     overlay.classList.add('fade-out');
-    setTimeout(() => overlay.remove(), 600);
+    setTimeout(function() { overlay.remove(); }, 600);
   }, 200);
 }
 
-// ─── Masque mondial (cache tout sauf la France et ses COM) ────────────────
+// ─── Masque mondial ───────────────────────────────────────────────────────
+// Seul FRA est conservé visible.
+// SPM (Saint-Pierre-et-Miquelon), BLM (Saint-Barthélemy) et MAF (Saint-Martin)
+// sont masqués au même titre que les autres pays étrangers.
 async function addWorldMask() {
-  // Pays à NE PAS masquer : France (FRA) et ses collectivités mentionnées
-  const KEEP_ISO = new Set(['FRA', 'SPM', 'BLM', 'MAF']);
+  var KEEP_ISO = new Set(['FRA']);
+  // Couleur identique au fond CSS du #map (mer CARTO dark)
+  var SEA_COLOR = '#0c1825';
   try {
-    const res = await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
-    const world = await res.json();
-    const toMask = {
+    var res = await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+    var world = await res.json();
+    var toMask = {
       type: 'FeatureCollection',
-      features: world.features.filter(f => {
-        const iso = f.properties && (f.properties.ISO_A3 || f.properties.iso_a3 || '');
+      features: world.features.filter(function(f) {
+        var iso = f.properties && (f.properties.ISO_A3 || f.properties.iso_a3 || '');
         return !KEEP_ISO.has(iso);
       })
     };
     L.geoJSON(toMask, {
       style: {
-        fillColor: '#060e18',
-        fillOpacity: 0.82,
-        color: '#060e18',
-        weight: 0.5
+        fillColor:   SEA_COLOR,
+        fillOpacity: 1.0,
+        color:       SEA_COLOR,
+        weight:      0
       },
       interactive: false
     }).addTo(map);
@@ -262,45 +335,61 @@ async function addWorldMask() {
   }
 }
 
-// ─── Layers ───────────────────────────────────────────────────────────────
-const tooltip = L.tooltip({ className: 'tooltip-clpe', permanent: false, direction: 'top', offset: [0, -10] });
+// ─── Construction des couches cartographiques ─────────────────────────────
+var tooltip = L.tooltip({ className: 'tooltip-clpe', permanent: false, direction: 'top', offset: [0, -10] });
+
+function buildTooltipHTML(p, communeName) {
+  var region = p.reg  || '—';
+  var dep    = p.dep  || '—';
+  var clpe   = p.CLPE || '—';
+  var comLine = communeName
+    ? '<span class="tt-com">🏘 ' + communeName + '</span>'
+    : '';
+  return '<span class="tt-region">📍 ' + region + '</span>' +
+         '<span class="tt-dep">🏛 ' + dep + '</span>' +
+         comLine +
+         '<span class="tt-clpe">🤝 ' + clpe + '</span>';
+}
 
 function buildLayers() {
-  // Communes
-  const comLayer = L.geoJSON(COM_DATA, {
+  // Communes (traits de contour, non interactifs)
+  var comLayer = L.geoJSON(COM_DATA, {
     renderer: L.canvas({ tolerance: 1 }),
     style: { weight: 0.2, color: 'rgba(100,160,210,0.1)', fill: false }
   }).addTo(map);
 
   map.on('zoomend', function() {
-    const z = map.getZoom();
-    const opacity = z >= 9 ? 0.28 : z >= 7 ? 0.14 : 0.06;
-    comLayer.setStyle({ color: `rgba(100,160,210,${opacity})`, weight: z >= 9 ? 0.4 : 0.2 });
+    var z = map.getZoom();
+    var opacity = z >= 9 ? 0.28 : z >= 7 ? 0.14 : 0.06;
+    comLayer.setStyle({ color: 'rgba(100,160,210,' + opacity + ')', weight: z >= 9 ? 0.4 : 0.2 });
   });
 
-  // CLPE
-  const clpeLayer = L.geoJSON(CLPE_DATA, {
+  // CLPE — couche principale interactive
+  var clpeLayer = L.geoJSON(CLPE_DATA, {
     renderer: L.canvas({ tolerance: 2 }),
     style: function(feat) {
-      const c = feat.properties.color_idx || 0;
+      var c = feat.properties.color_idx || 0;
       return { weight: 0.8, color: 'rgba(20,60,110,0.5)', fillColor: clpeColor(c), fillOpacity: 0.72 };
     },
     onEachFeature: function(feat, layer) {
-      const p = feat.properties;
-      const ttHTML = `
-        <div class="tt-region">📍 ${p.reg || ''}</div>
-        <div class="tt-dep">🏛 ${p.dep || ''}</div>
-        <div class="tt-clpe">🤝 ${p.CLPE}</div>
-      `;
+      var p = feat.properties;
+
       layer.on('mouseover', function(e) {
         layer.setStyle({ weight: 2.5, color: '#7ec8f4', fillOpacity: 0.88 });
-        tooltip.setLatLng(e.latlng).setContent(ttHTML).addTo(map);
+        var com = findNearestCommune(e.latlng.lng, e.latlng.lat);
+        tooltip.setLatLng(e.latlng).setContent(buildTooltipHTML(p, com)).addTo(map);
       });
-      layer.on('mousemove', function(e) { tooltip.setLatLng(e.latlng); });
+
+      layer.on('mousemove', function(e) {
+        var com = findNearestCommune(e.latlng.lng, e.latlng.lat);
+        tooltip.setLatLng(e.latlng).setContent(buildTooltipHTML(p, com));
+      });
+
       layer.on('mouseout', function() {
         clpeLayer.resetStyle(layer);
         map.removeLayer(tooltip);
       });
+
       layer.on('click', function() { zoomToBbox(feat.properties.bbox); });
     }
   }).addTo(map);
@@ -314,23 +403,23 @@ function buildLayers() {
   buildLabels();
 }
 
-// ─── Labels dynamiques ────────────────────────────────────────────────────
-let regLabelGroup, depLabelGroup;
+// ─── Étiquettes dynamiques zoom-dépendantes ───────────────────────────────
+var regLabelGroup, depLabelGroup;
 function buildLabels() {
-  const makeIcon = (html) => L.divIcon({ className: '', html, iconAnchor: [0, 0] });
+  function makeIcon(html) { return L.divIcon({ className: '', html: html, iconAnchor: [0, 0] }); }
 
-  const regMarkers = REG_DATA.features.map(feat => {
-    const b = feat.properties.bbox;
+  var regMarkers = REG_DATA.features.map(function(feat) {
+    var b = feat.properties.bbox;
     return L.marker([(b[1]+b[3])/2, (b[0]+b[2])/2], {
-      icon: makeIcon(`<div style="font-size:0.88rem;color:#ffe070;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none;">${feat.properties.nom_officiel}</div>`),
+      icon: makeIcon('<div style="font-size:0.88rem;color:#ffe070;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none;">' + feat.properties.nom_officiel + '</div>'),
       interactive: false
     });
   });
 
-  const depMarkers = DEP_DATA.features.map(feat => {
-    const b = feat.properties.bbox;
+  var depMarkers = DEP_DATA.features.map(function(feat) {
+    var b = feat.properties.bbox;
     return L.marker([(b[1]+b[3])/2, (b[0]+b[2])/2], {
-      icon: makeIcon(`<div style="font-size:0.62rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none;">${feat.properties.nom_officiel}</div>`),
+      icon: makeIcon('<div style="font-size:0.62rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none;">' + feat.properties.nom_officiel + '</div>'),
       interactive: false
     });
   });
@@ -342,60 +431,111 @@ function buildLabels() {
 }
 
 function updateLabels() {
-  const z = map.getZoom();
+  var z = map.getZoom();
   if (z <= 7)   { if (!map.hasLayer(regLabelGroup)) regLabelGroup.addTo(map); }
   else           { if (map.hasLayer(regLabelGroup))  map.removeLayer(regLabelGroup); }
   if (z >= 7.5) { if (!map.hasLayer(depLabelGroup)) depLabelGroup.addTo(map); }
   else           { if (map.hasLayer(depLabelGroup))  map.removeLayer(depLabelGroup); }
 }
 
-// ─── Dropdowns ────────────────────────────────────────────────────────────
+// ─── Remplissage initial des listes ──────────────────────────────────────
 function populateDropdowns() {
-  const selReg  = document.getElementById('sel-region');
-  const selDep  = document.getElementById('sel-dep');
-  const selClpe = document.getElementById('sel-clpe');
+  var selReg  = document.getElementById('sel-region');
+  var selDep  = document.getElementById('sel-dep');
+  var selClpe = document.getElementById('sel-clpe');
 
-  REG_DATA.features.map(f => f.properties.nom_officiel).sort()
-    .forEach(name => selReg.add(new Option(name, name)));
-  DEP_DATA.features.map(f => f.properties.nom_officiel).sort()
-    .forEach(name => selDep.add(new Option(name, name)));
-  [...new Set(CLPE_DATA.features.map(f => f.properties.CLPE))].sort()
-    .forEach(name => selClpe.add(new Option(name, name)));
+  REG_DATA.features.map(function(f) { return f.properties.nom_officiel; }).sort()
+    .forEach(function(name) { selReg.add(new Option(name, name)); });
+
+  allDeps.forEach(function(name)  { selDep.add(new Option(name, name)); });
+  allClpes.forEach(function(name) { selClpe.add(new Option(name, name)); });
 }
 
-// ─── Zoom helpers ─────────────────────────────────────────────────────────
+// ─── Mise à jour cascadée des listes ─────────────────────────────────────
+function repopulateDeps(regName) {
+  var sel   = document.getElementById('sel-dep');
+  var saved = sel.value;
+  sel.innerHTML = '<option value="">— Tous les départements —</option>';
+  var list = regName ? (regToDeps[regName] || []) : allDeps;
+  list.forEach(function(name) { sel.add(new Option(name, name)); });
+  if (list.indexOf(saved) !== -1) sel.value = saved;
+}
+
+function repopulateClpes(regName, depName) {
+  var sel   = document.getElementById('sel-clpe');
+  var saved = sel.value;
+  sel.innerHTML = '<option value="">— Tous les CLPE —</option>';
+  var list;
+  if (depName) {
+    list = (depToClpes[depName] || []).slice();
+  } else if (regName) {
+    var seen = {};
+    list = [];
+    CLPE_DATA.features.forEach(function(f) {
+      if (f.properties.reg === regName && !seen[f.properties.CLPE]) {
+        seen[f.properties.CLPE] = true;
+        list.push(f.properties.CLPE);
+      }
+    });
+    list.sort();
+  } else {
+    list = allClpes;
+  }
+  list.forEach(function(name) { sel.add(new Option(name, name)); });
+  if (list.indexOf(saved) !== -1) sel.value = saved;
+}
+
+// ─── Gestionnaires de changement des listes ───────────────────────────────
+function onRegionChange() {
+  var regName = document.getElementById('sel-region').value;
+  document.getElementById('sel-dep').value  = '';
+  document.getElementById('sel-clpe').value = '';
+  repopulateDeps(regName);
+  repopulateClpes(regName, '');
+  if (!regName) { map.setView([46.5, 2.5], 6); return; }
+  var feat = REG_DATA.features.find(function(f) { return f.properties.nom_officiel === regName; });
+  if (feat) zoomToBbox(feat.properties.bbox);
+}
+
+function onDepChange() {
+  var regName = document.getElementById('sel-region').value;
+  var depName = document.getElementById('sel-dep').value;
+  document.getElementById('sel-clpe').value = '';
+  repopulateClpes(regName, depName);
+  if (!depName) {
+    if (regName) {
+      var feat = REG_DATA.features.find(function(f) { return f.properties.nom_officiel === regName; });
+      if (feat) zoomToBbox(feat.properties.bbox);
+    }
+    return;
+  }
+  var feat = DEP_DATA.features.find(function(f) { return f.properties.nom_officiel === depName; });
+  if (feat) zoomToBbox(feat.properties.bbox);
+}
+
+function onClpeChange() {
+  var clpeName = document.getElementById('sel-clpe').value;
+  if (!clpeName) return;
+  var feat = CLPE_DATA.features.find(function(f) { return f.properties.CLPE === clpeName; });
+  if (feat) zoomToBbox(feat.properties.bbox);
+}
+
+// ─── Helpers de zoom ──────────────────────────────────────────────────────
 function zoomToBbox(bbox) {
   map.fitBounds([[bbox[1],bbox[0]],[bbox[3],bbox[2]]], { padding: [45,45], maxZoom: 12 });
 }
-function zoomToSelection(type) {
-  const selReg  = document.getElementById('sel-region');
-  const selDep  = document.getElementById('sel-dep');
-  const selClpe = document.getElementById('sel-clpe');
-  let feat;
-  if (type === 'region') {
-    const v = selReg.value; if (!v) return;
-    selDep.value = ''; selClpe.value = '';
-    feat = REG_DATA.features.find(f => f.properties.nom_officiel === v);
-  } else if (type === 'dep') {
-    const v = selDep.value; if (!v) return;
-    selReg.value = ''; selClpe.value = '';
-    feat = DEP_DATA.features.find(f => f.properties.nom_officiel === v);
-  } else {
-    const v = selClpe.value; if (!v) return;
-    selReg.value = ''; selDep.value = '';
-    feat = CLPE_DATA.features.find(f => f.properties.CLPE === v);
-  }
-  if (feat) zoomToBbox(feat.properties.bbox);
-}
+
 function resetView() {
   document.getElementById('sel-region').value = '';
   document.getElementById('sel-dep').value    = '';
   document.getElementById('sel-clpe').value   = '';
+  repopulateDeps('');
+  repopulateClpes('', '');
   map.setView([46.5, 2.5], 6);
 }
 
-// ─── Start ────────────────────────────────────────────────────────────────
-loadAll().catch(err => {
+// ─── Démarrage ────────────────────────────────────────────────────────────
+loadAll().catch(function(err) {
   status.textContent = 'Erreur de chargement : ' + err.message;
   bar.style.background = '#c0392b';
 });
