@@ -11,7 +11,6 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',Arial,sans-serif; background:#0f1923; color:#e0e8f0; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
 
-/* Header */
 #header {
   background:linear-gradient(135deg,#0a2540 0%,#1a3a5c 100%);
   padding:10px 20px; border-bottom:1px solid #1e4060;
@@ -37,7 +36,26 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 }
 .btn-reset:hover { background:#1a3a5c; border-color:#4a9fd4; }
 
-/* Breadcrumb nav bar */
+#export-toolbar {
+  background:#050f1a; border-bottom:1px solid #0e2030;
+  padding:5px 16px; display:flex; align-items:center; gap:8px;
+  flex-shrink:0; flex-wrap:wrap;
+}
+#export-toolbar .tb-label { font-size:.6rem; color:#3a5a70; text-transform:uppercase; letter-spacing:.5px; font-weight:600; white-space:nowrap; }
+.btn-exp {
+  border-radius:5px; padding:4px 11px; font-size:.69rem; cursor:pointer;
+  transition:all .2s; white-space:nowrap; border:1px solid; background:transparent;
+}
+.btn-exp.national { border-color:rgba(140,100,210,.45); color:#b090f0; }
+.btn-exp.national:hover { background:rgba(80,40,150,.3); border-color:#b090f0; }
+.btn-exp.reg { border-color:rgba(230,200,50,.4); color:#e8d060; }
+.btn-exp.reg:hover { background:rgba(120,90,0,.3); border-color:#e8d060; }
+.btn-exp.dep { border-color:rgba(230,150,40,.4); color:#e0a040; }
+.btn-exp.dep:hover { background:rgba(100,60,0,.3); border-color:#e0a040; }
+.btn-exp.clpe { border-color:rgba(74,159,212,.4); color:#70c0f0; }
+.btn-exp.clpe:hover { background:rgba(26,90,140,.3); border-color:#70c0f0; }
+.hidden { display:none !important; }
+
 #nav-bar {
   background:#061220; border-bottom:1px solid #102030;
   padding:5px 20px; display:flex; align-items:center; justify-content:space-between;
@@ -46,86 +64,49 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 #nav-path { display:flex; align-items:center; gap:2px; flex-wrap:wrap; }
 .nav-node {
   font-size:.71rem; color:#5a8aaa; padding:2px 7px;
-  border-radius:4px; cursor:pointer; transition:color .15s,background .15s;
-  white-space:nowrap;
+  border-radius:4px; cursor:pointer; transition:color .15s,background .15s; white-space:nowrap;
 }
 .nav-node:hover  { color:#9dd4f0; background:rgba(74,159,212,.12); }
 .nav-node.active { color:#daeeff; font-weight:600; cursor:default; }
 .nav-node.active:hover { background:transparent; }
 .nav-sep { color:#253c50; font-size:.71rem; }
-.nav-hint { font-size:.66rem; color:#2a5070; font-style:italic; white-space:nowrap; }
-.hidden  { display:none !important; }
+.nav-hint { font-size:.64rem; color:#2a4d60; font-style:italic; white-space:nowrap; }
 
-/* Map + panel wrap */
 #map-wrap { flex:1; display:flex; position:relative; overflow:hidden; }
 #map { flex:1; background:#0c1825; }
 
-/* Export panel */
 #export-panel {
-  width:0; overflow:hidden; background:#071018;
-  border-left:1px solid #192d40;
-  display:flex; flex-direction:column;
-  transition:width .3s cubic-bezier(.4,0,.2,1);
-  flex-shrink:0;
+  width:0; overflow:hidden; background:#071018; border-left:1px solid #192d40;
+  display:flex; flex-direction:column; transition:width .3s cubic-bezier(.4,0,.2,1); flex-shrink:0;
 }
 #export-panel.open { width:310px; }
 #export-inner { width:310px; display:flex; flex-direction:column; height:100%; }
-
 #export-header {
   background:linear-gradient(135deg,#0a2038,#102840);
   padding:13px 15px; border-bottom:1px solid #1a3550;
-  display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
-  flex-shrink:0;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-shrink:0;
 }
 #export-header-text h3 { font-size:.86rem; color:#7ec8f4; font-weight:700; line-height:1.35; }
 #export-header-text p  { font-size:.67rem; color:#3d6a88; margin-top:3px; }
-.btn-close {
-  background:transparent; border:none; color:#3a6080;
-  font-size:1.25rem; cursor:pointer; line-height:1;
-  padding:0 2px; flex-shrink:0; transition:color .2s;
-}
+.btn-close { background:transparent; border:none; color:#3a6080; font-size:1.25rem; cursor:pointer; line-height:1; padding:0 2px; flex-shrink:0; transition:color .2s; }
 .btn-close:hover { color:#7ec8f4; }
-
 #export-actions { padding:10px 13px; border-bottom:1px solid #0f2030; flex-shrink:0; }
-.btn-export {
-  width:100%; padding:8px 12px; border-radius:7px;
-  font-size:.74rem; cursor:pointer; font-weight:600;
-  transition:all .2s; border:1px solid;
-}
-.btn-export.csv {
-  background:rgba(26,122,191,.16); color:#70c0f0;
-  border-color:rgba(74,159,212,.35);
-}
+.btn-export { width:100%; padding:8px 12px; border-radius:7px; font-size:.74rem; cursor:pointer; font-weight:600; transition:all .2s; border:1px solid; }
+.btn-export.csv { background:rgba(26,122,191,.16); color:#70c0f0; border-color:rgba(74,159,212,.35); }
 .btn-export.csv:hover { background:rgba(26,122,191,.32); border-color:#70c0f0; }
-
 #export-search-wrap { padding:8px 13px 4px; flex-shrink:0; }
-#export-search {
-  width:100%; background:#0c1e2e; color:#b8d8f0;
-  border:1px solid #1a3550; border-radius:6px;
-  padding:6px 10px; font-size:.73rem; outline:none;
-  transition:border-color .2s;
-}
+#export-search { width:100%; background:#0c1e2e; color:#b8d8f0; border:1px solid #1a3550; border-radius:6px; padding:6px 10px; font-size:.73rem; outline:none; transition:border-color .2s; }
 #export-search:focus { border-color:#4a9fd4; }
-
 #export-list { flex:1; overflow-y:auto; padding:4px 0; }
 #export-list::-webkit-scrollbar { width:4px; }
 #export-list::-webkit-scrollbar-track { background:#071018; }
 #export-list::-webkit-scrollbar-thumb { background:#192d40; border-radius:2px; }
-.com-item {
-  display:flex; align-items:center; gap:9px;
-  padding:5px 13px; border-bottom:1px solid rgba(15,35,55,.6);
-  transition:background .12s;
-}
+.com-item { display:flex; align-items:center; gap:9px; padding:5px 13px; border-bottom:1px solid rgba(15,35,55,.6); transition:background .12s; }
 .com-item:hover { background:rgba(74,159,212,.07); }
 .com-code { font-size:.64rem; color:#3a6a8a; font-family:monospace; min-width:42px; flex-shrink:0; }
 .com-name { font-size:.75rem; color:#b8d8f0; }
 
-/* Loading */
-#loading {
-  position:fixed; inset:0; background:#0a1520;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  z-index:9999; transition:opacity .5s;
-}
+#loading { position:fixed; inset:0; background:#0a1520; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity .5s; }
 #loading.fade-out { opacity:0; pointer-events:none; }
 #loading-logo { font-size:2.5rem; margin-bottom:20px; }
 #loading h2 { color:#7ec8f4; font-size:1rem; margin-bottom:24px; font-weight:500; }
@@ -133,37 +114,24 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 #loading-bar { height:100%; background:linear-gradient(90deg,#1a7abf,#7ec8f4); width:0%; border-radius:4px; transition:width .3s ease; }
 #loading-status { color:#4a7a9a; font-size:.72rem; margin-top:10px; }
 
-/* Tooltip */
-.tooltip-clpe {
-  background:rgba(4,12,22,.97) !important; border:1px solid #2a6090 !important;
-  font-size:.77rem !important; padding:8px 13px !important;
-  border-radius:8px !important; box-shadow:0 4px 20px rgba(0,0,0,.8) !important;
-  pointer-events:none !important; max-width:300px !important; line-height:1.7 !important;
-}
+.tooltip-clpe { background:rgba(4,12,22,.97) !important; border:1px solid #2a6090 !important; font-size:.77rem !important; padding:8px 13px !important; border-radius:8px !important; box-shadow:0 4px 20px rgba(0,0,0,.8) !important; pointer-events:none !important; max-width:300px !important; line-height:1.7 !important; }
 .tooltip-clpe::before { display:none !important; }
 .tooltip-clpe .tt-region { display:block; font-size:.62rem; color:#ffe070 !important; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
 .tooltip-clpe .tt-dep    { display:block; font-size:.69rem; color:#f5b84a !important; }
 .tooltip-clpe .tt-com    { display:block; font-size:.67rem; color:#8ecce8 !important; font-style:italic; }
 .tooltip-clpe .tt-clpe   { display:block; font-size:.83rem; color:#e8f4ff !important; font-weight:700; border-top:1px solid rgba(74,159,212,.25); padding-top:4px; margin-top:3px; }
-.tooltip-clpe .tt-hint   { display:block; font-size:.6rem; color:#2a5a78 !important; margin-top:2px; font-style:italic; }
-.tooltip-clpe .tt-dep-action { display:block; font-size:.67rem; color:#c8a030 !important; font-style:italic; }
 
-/* Legend */
-#legend {
-  position:absolute; bottom:22px; right:14px;
-  background:rgba(4,12,22,.92); border:1px solid #1a3550;
-  border-radius:9px; padding:10px 14px; font-size:.69rem;
-  z-index:1000; min-width:172px; box-shadow:0 4px 18px rgba(0,0,0,.6);
-}
+#legend { position:absolute; bottom:22px; right:14px; background:rgba(4,12,22,.92); border:1px solid #1a3550; border-radius:9px; padding:10px 14px; font-size:.69rem; z-index:1000; min-width:178px; box-shadow:0 4px 18px rgba(0,0,0,.6); }
 #legend h3 { color:#7ec8f4; font-size:.71rem; margin-bottom:8px; font-weight:700; letter-spacing:.3px; }
 .leg-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; color:#7090a8; }
 .leg-swatch { width:24px; height:10px; border-radius:3px; flex-shrink:0; }
 .leg-line { width:24px; flex-shrink:0; }
+
+.clpe-label { font-size:.54rem; color:#90d0f8; font-weight:700; text-shadow:0 0 4px #000,0 0 9px #000,0 0 14px #000; white-space:nowrap; pointer-events:none; line-height:1.2; text-align:center; }
 </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loading">
   <div id="loading-logo">🗺</div>
   <h2>Chargement de la carte…</h2>
@@ -171,11 +139,10 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
   <div id="loading-status">Initialisation…</div>
 </div>
 
-<!-- Header -->
 <div id="header">
   <div id="header-title">
     <h1>Comités Locaux Pour l'Emploi — France</h1>
-    <p>362 comités · Navigation région → département → CLPE · Exportez la liste des communes</p>
+    <p>362 comités · Navigation par liste déroulante · Molette ou boutons ± pour zoomer</p>
   </div>
   <div id="controls">
     <div class="ctrl-group">
@@ -200,24 +167,29 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
   </div>
 </div>
 
-<!-- Breadcrumb -->
-<div id="nav-bar">
-  <div id="nav-path">
-    <span id="nav-national" class="nav-node active" onclick="resetView()">🌍 France</span>
-    <span id="nav-reg-sep"   class="nav-sep hidden"> ›</span>
-    <span id="nav-reg-node"  class="nav-node hidden"></span>
-    <span id="nav-dep-sep"   class="nav-sep hidden"> ›</span>
-    <span id="nav-dep-node"  class="nav-node hidden"></span>
-    <span id="nav-clpe-sep"  class="nav-sep hidden"> ›</span>
-    <span id="nav-clpe-node" class="nav-node active hidden"></span>
-  </div>
-  <div id="nav-hint">Cliquez sur une région pour zoomer</div>
+<div id="export-toolbar">
+  <span class="tb-label">📥 Exports CSV :</span>
+  <button class="btn-exp national" onclick="exportNational()">🌍 France entière</button>
+  <button id="btn-exp-reg"  class="btn-exp reg  hidden" onclick="exportRegion()">📍 —</button>
+  <button id="btn-exp-dep"  class="btn-exp dep  hidden" onclick="exportDep()">🏛 —</button>
+  <button id="btn-exp-clpe" class="btn-exp clpe hidden" onclick="openCLPEPanel()">🤝 Voir CLPE</button>
 </div>
 
-<!-- Map + Export side panel -->
+<div id="nav-bar">
+  <div id="nav-path">
+    <span class="nav-node active" id="nav-national" onclick="resetView()">🇫🇷 France</span>
+    <span class="nav-sep hidden" id="nav-reg-sep">›</span>
+    <span class="nav-node hidden" id="nav-reg-node"></span>
+    <span class="nav-sep hidden" id="nav-dep-sep">›</span>
+    <span class="nav-node hidden" id="nav-dep-node"></span>
+    <span class="nav-sep hidden" id="nav-clpe-sep">›</span>
+    <span class="nav-node hidden" id="nav-clpe-node"></span>
+  </div>
+  <span class="nav-hint" id="nav-hint">Survolez la carte pour voir commune · CLPE · département · région</span>
+</div>
+
 <div id="map-wrap">
   <div id="map"></div>
-
   <div id="export-panel">
     <div id="export-inner">
       <div id="export-header">
@@ -236,8 +208,6 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
       <div id="export-list"></div>
     </div>
   </div>
-
-  <!-- Legend -->
   <div id="legend">
     <h3>Légende</h3>
     <div class="leg-item">
@@ -249,92 +219,85 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
       Région
     </div>
     <div class="leg-item">
-      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.5"/></svg></div>
+      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.8"/></svg></div>
       Département
     </div>
     <div class="leg-item">
-      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(140,195,235,.55)" stroke-width="0.7"/></svg></div>
-      Commune <em style="font-size:.6rem;color:#3a6080;">(contour fin)</em>
+      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(100,180,240,0.9)" stroke-width="1.3"/></svg></div>
+      Commune
     </div>
   </div>
 </div>
 
 <script>
-// ─── Palette ──────────────────────────────────────────────────────────────
+// ─── Palette ───────────────────────────────────────────────────────────────
 const PALETTE = ['#1a5276','#1f8cbf','#117a65','#154360','#2980b9','#1abc9c','#0e6251','#2471a3','#148f77','#1a6da0','#0d5073','#239b56'];
 const clpeColor = idx => PALETTE[idx % PALETTE.length];
 
-// ─── Territoires exclus (sans CLPE) ──────────────────────────────────────
 const DEPS_NO_CLPE = new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon','Val-de-Marne']);
 const REGS_NO_CLPE = new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
 
 function isComExcluded(code) {
   if (!code) return true;
-  if (code.startsWith('97')) return true; // DOM-TOM
-  if (code.startsWith('94')) return true; // Val-de-Marne
+  if (code.startsWith('97')) return true;
+  if (code.startsWith('94')) return true;
   return false;
 }
 
-// ─── Progress ─────────────────────────────────────────────────────────────
+// ─── Progress ──────────────────────────────────────────────────────────────
 const bar = document.getElementById('loading-bar');
 const status = document.getElementById('loading-status');
-function setProgress(pct,msg){ bar.style.width=pct+'%'; status.textContent=msg; }
+function setProgress(pct, msg) { bar.style.width = pct + '%'; status.textContent = msg; }
 
-// ─── Map ──────────────────────────────────────────────────────────────────
-const map = L.map('map',{ center:[46.5,2.5], zoom:6, preferCanvas:true, zoomSnap:.5 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-  maxZoom:18, opacity:.55
+// ─── Map — déplacement désactivé, zoom conservé ────────────────────────────
+const map = L.map('map', {
+  center: [46.5, 2.5], zoom: 6,
+  preferCanvas: true, zoomSnap: .5,
+  dragging: false,
+  scrollWheelZoom: true,
+  touchZoom: true,
+  doubleClickZoom: false,
+  zoomControl: true
+});
+map.dragging.disable();
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 18, opacity: .55
 }).addTo(map);
 
-// ─── Panes (z-index = priorité de clic ; plus haut = intercepte en premier) ─
-//  comPane < clpePane < depPane < regPane
+// ─── Panes ─────────────────────────────────────────────────────────────────
 const comPane  = map.createPane('comPane');  comPane.style.zIndex  = '420';
 const clpePane = map.createPane('clpePane'); clpePane.style.zIndex = '430';
 const depPane  = map.createPane('depPane');  depPane.style.zIndex  = '440';
 const regPane  = map.createPane('regPane');  regPane.style.zIndex  = '450';
 comPane.style.pointerEvents  = 'none';
-clpePane.style.pointerEvents = 'none';
+clpePane.style.pointerEvents = 'auto';  // Toujours interactif → survol à tous niveaux de zoom
 depPane.style.pointerEvents  = 'none';
-regPane.style.pointerEvents  = 'auto'; // niveau national : on clique sur régions
+regPane.style.pointerEvents  = 'none';
 
-// ─── État de navigation ───────────────────────────────────────────────────
+// ─── Navigation ────────────────────────────────────────────────────────────
 let navLevel = 'national';
-let nav = { region:null, department:null, clpe:null };
-
-function updatePanes() {
-  regPane.style.pointerEvents  = navLevel==='national'   ? 'auto' : 'none';
-  depPane.style.pointerEvents  = navLevel==='region'     ? 'auto' : 'none';
-  clpePane.style.pointerEvents = navLevel==='department' ? 'auto' : 'none';
-}
-
-const HINTS = {
-  national:   'Cliquez sur une région pour zoomer',
-  region:     'Cliquez sur un département pour zoomer',
-  department: 'Cliquez sur un CLPE pour zoomer et exporter les communes',
-  clpe:       'Consultez et exportez les communes ci-contre'
-};
+let nav = { region: null, department: null, clpe: null };
 
 function updateNavBar() {
-  document.getElementById('nav-hint').textContent = HINTS[navLevel]||'';
+  document.getElementById('nav-national').classList.toggle('active', navLevel === 'national');
   const show = id => document.getElementById(id).classList.remove('hidden');
   const hide = id => document.getElementById(id).classList.add('hidden');
-  document.getElementById('nav-national').classList.toggle('active', navLevel==='national');
 
   if (nav.region) {
     show('nav-reg-sep'); show('nav-reg-node');
     const el = document.getElementById('nav-reg-node');
     el.textContent = nav.region;
-    el.classList.toggle('active', navLevel==='region');
+    el.classList.toggle('active', navLevel === 'region');
     el.onclick = () => {
-      if (navLevel==='region') return;
-      navLevel='region'; nav.department=null; nav.clpe=null;
-      hideExportPanel(); updatePanes(); updateNavBar();
-      repopulateDeps(nav.region);
-      repopulateClpes(nav.region,'');
-      document.getElementById('sel-dep').value='';
-      document.getElementById('sel-clpe').value='';
-      const f=REG_DATA.features.find(f=>f.properties.nom_officiel===nav.region);
+      if (navLevel === 'region') return;
+      navLevel = 'region'; nav.department = null; nav.clpe = null;
+      hideExportPanel(); updateNavBar();
+      repopulateDeps(nav.region); repopulateClpes(nav.region, '');
+      document.getElementById('sel-dep').value = '';
+      document.getElementById('sel-clpe').value = '';
+      const f = REG_DATA.features.find(f => f.properties.nom_officiel === nav.region);
       if (f) zoomToBbox(f.properties.bbox);
     };
   } else { hide('nav-reg-sep'); hide('nav-reg-node'); }
@@ -343,14 +306,14 @@ function updateNavBar() {
     show('nav-dep-sep'); show('nav-dep-node');
     const el = document.getElementById('nav-dep-node');
     el.textContent = nav.department;
-    el.classList.toggle('active', navLevel==='department');
+    el.classList.toggle('active', navLevel === 'department');
     el.onclick = () => {
-      if (navLevel==='department') return;
-      navLevel='department'; nav.clpe=null;
-      hideExportPanel(); updatePanes(); updateNavBar();
+      if (navLevel === 'department') return;
+      navLevel = 'department'; nav.clpe = null;
+      hideExportPanel(); updateNavBar();
       repopulateClpes(nav.region, nav.department);
-      document.getElementById('sel-clpe').value='';
-      const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===nav.department);
+      document.getElementById('sel-clpe').value = '';
+      const f = DEP_DATA.features.find(f => f.properties.nom_officiel === nav.department);
       if (f) zoomToBbox(f.properties.bbox);
     };
   } else { hide('nav-dep-sep'); hide('nav-dep-node'); }
@@ -362,355 +325,464 @@ function updateNavBar() {
     el.classList.add('active');
     el.onclick = null;
   } else { hide('nav-clpe-sep'); hide('nav-clpe-node'); }
+
+  updateExportBar();
 }
 
-// ─── Données globales ─────────────────────────────────────────────────────
-let REG_DATA, DEP_DATA, CLPE_DATA, COM_DATA, CLPE_COMMUNES;
-let allDeps=[], allClpes=[];
-let regToDeps={}, depToClpes={}, depToRegName={};
-let COM_CENTROIDS=[];
+function updateExportBar() {
+  const btnReg  = document.getElementById('btn-exp-reg');
+  const btnDep  = document.getElementById('btn-exp-dep');
+  const btnClpe = document.getElementById('btn-exp-clpe');
+  if (nav.region) {
+    btnReg.classList.remove('hidden');
+    btnReg.textContent = '📍 ' + nav.region;
+  } else { btnReg.classList.add('hidden'); }
+  if (nav.department) {
+    btnDep.classList.remove('hidden');
+    btnDep.textContent = '🏛 ' + nav.department;
+  } else { btnDep.classList.add('hidden'); }
+  nav.clpe ? btnClpe.classList.remove('hidden') : btnClpe.classList.add('hidden');
+}
 
-function buildCentroids() {
-  COM_CENTROIDS = COM_DATA.features.map(feat=>{
-    const g=feat.geometry;
-    const ring = g.type==='Polygon' ? g.coordinates[0] : g.coordinates[0][0];
-    let sx=0,sy=0,n=ring.length-1;
-    for(let i=0;i<n;i++){sx+=ring[i][0];sy+=ring[i][1];}
-    return {name:feat.properties.nom_officiel, x:sx/n, y:sy/n};
+// ─── Données ───────────────────────────────────────────────────────────────
+let REG_DATA, DEP_DATA, CLPE_DATA, COM_DATA;
+let allDeps = [], allClpes = [];
+let regToDeps = {}, depToClpes = {}, depToRegName = {};
+let depCodeToName = {}, regCodeToName = {};
+let COM_CENTROIDS = [];
+let comByClpe = {}, comByDep = {}, comByReg = {};
+
+function buildLookups() {
+  DEP_DATA.features.forEach(f => { depCodeToName[f.properties.code_insee] = f.properties.nom_officiel; });
+  REG_DATA.features.forEach(f => { regCodeToName[f.properties.code_insee] = f.properties.nom_officiel; });
+}
+
+function buildComLists() {
+  comByClpe = {}; comByDep = {}; comByReg = {};
+  COM_DATA.features.forEach(f => {
+    const p = f.properties;
+    if (isComExcluded(p.code)) return;
+    const depName = depCodeToName[p.dep] || p.dep || '';
+    const regName = regCodeToName[p.reg] || p.reg || '';
+    const rec = { code: p.code, nom: p.nom, clpe: p.clpe || '', dep: depName, reg: regName };
+    if (rec.clpe) { if (!comByClpe[rec.clpe]) comByClpe[rec.clpe] = []; comByClpe[rec.clpe].push(rec); }
+    if (depName)  { if (!comByDep[depName])   comByDep[depName]   = []; comByDep[depName].push(rec); }
+    if (regName)  { if (!comByReg[regName])   comByReg[regName]   = []; comByReg[regName].push(rec); }
   });
 }
 
-function nearestCommune(lng,lat) {
-  let best=null,bd=Infinity;
-  for(let c of COM_CENTROIDS){const d=(c.x-lng)**2+(c.y-lat)**2;if(d<bd){bd=d;best=c;}}
-  return best?best.name:null;
+function buildCentroids() {
+  COM_CENTROIDS = [];
+  COM_DATA.features.forEach(feat => {
+    const g = feat.geometry;
+    if (!g) return;
+    const ring = g.type === 'Polygon' ? g.coordinates[0] : (g.coordinates && g.coordinates[0] ? g.coordinates[0][0] : null);
+    if (!ring || ring.length < 2) return;
+    let sx = 0, sy = 0, n = ring.length - 1;
+    if (n < 1) return;
+    for (let i = 0; i < n; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+    COM_CENTROIDS.push({ name: feat.properties.nom, x: sx / n, y: sy / n });
+  });
+}
+
+function nearestCommune(lng, lat) {
+  let best = null, bd = Infinity;
+  for (let c of COM_CENTROIDS) {
+    const d = (c.x - lng) * (c.x - lng) + (c.y - lat) * (c.y - lat);
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best ? best.name : null;
 }
 
 function buildCascading() {
-  const rcn={};
-  REG_DATA.features.forEach(f=>rcn[f.properties.code_insee]=f.properties.nom_officiel);
-  DEP_DATA.features.forEach(f=>{
-    const dep=f.properties.nom_officiel;
-    const regName=rcn[f.properties.code_insee_de_la_region||'']||'';
-    depToRegName[dep]=regName;
-    if(!regToDeps[regName]) regToDeps[regName]=[];
+  const rcn = {};
+  REG_DATA.features.forEach(f => rcn[f.properties.code_insee] = f.properties.nom_officiel);
+  DEP_DATA.features.forEach(f => {
+    const dep = f.properties.nom_officiel;
+    const regName = rcn[f.properties.code_insee_de_la_region || ''] || '';
+    depToRegName[dep] = regName;
+    if (!regToDeps[regName]) regToDeps[regName] = [];
     regToDeps[regName].push(dep);
   });
-  CLPE_DATA.features.forEach(f=>{
-    const dep=f.properties.dep||'';
-    if(!depToClpes[dep]) depToClpes[dep]=[];
+  CLPE_DATA.features.forEach(f => {
+    const dep = f.properties.dep || '';
+    if (!depToClpes[dep]) depToClpes[dep] = [];
     depToClpes[dep].push(f.properties.CLPE);
   });
-  Object.values(regToDeps).forEach(a=>a.sort());
-  Object.values(depToClpes).forEach(a=>a.sort());
-  allDeps  = DEP_DATA.features.map(f=>f.properties.nom_officiel).sort();
-  allClpes = [...new Set(CLPE_DATA.features.map(f=>f.properties.CLPE))].sort();
+  Object.values(regToDeps).forEach(a => a.sort());
+  Object.values(depToClpes).forEach(a => a.sort());
+  allDeps  = DEP_DATA.features.map(f => f.properties.nom_officiel).sort();
+  allClpes = [...new Set(CLPE_DATA.features.map(f => f.properties.CLPE))].sort();
 }
 
-// ─── Chargement ───────────────────────────────────────────────────────────
+// ─── Chargement ────────────────────────────────────────────────────────────
 async function loadAll() {
-  setProgress(5,'Chargement des régions…');
-  const regRaw = await fetch('data/reg.json').then(r=>r.json());
-  REG_DATA = {...regRaw, features: regRaw.features.filter(f=>!REGS_NO_CLPE.has(f.properties.nom_officiel))};
+  setProgress(5,  'Chargement des régions…');
+  const regRaw = await fetch('data/reg.json').then(r => r.json());
+  REG_DATA = { ...regRaw, features: regRaw.features.filter(f => !REGS_NO_CLPE.has(f.properties.nom_officiel)) };
 
-  setProgress(16,'Chargement des départements…');
-  const depRaw = await fetch('data/dep.json').then(r=>r.json());
-  DEP_DATA = {...depRaw, features: depRaw.features.filter(f=>!DEPS_NO_CLPE.has(f.properties.nom_officiel))};
+  setProgress(14, 'Chargement des départements…');
+  const depRaw = await fetch('data/dep.json').then(r => r.json());
+  DEP_DATA = { ...depRaw, features: depRaw.features.filter(f => !DEPS_NO_CLPE.has(f.properties.nom_officiel)) };
 
-  setProgress(32,'Chargement des comités locaux…');
-  CLPE_DATA = await fetch('data/clpe.json').then(r=>r.json());
+  setProgress(25, 'Chargement des comités locaux…');
+  CLPE_DATA = await fetch('data/clpe.json').then(r => r.json());
 
-  setProgress(50,'Chargement des communes…');
-  const comRaw = await fetch('data/com.json').then(r=>r.json());
-  COM_DATA = {...comRaw, features: comRaw.features.filter(f=>!isComExcluded(f.properties.code_insee))};
+  setProgress(36, 'Chargement des communes (géométries précises)…');
+  const comRaw = await fetch('data/commune.geojson').then(r => r.json());
+  COM_DATA = { ...comRaw, features: comRaw.features.filter(f => !isComExcluded(f.properties.code)) };
 
-  setProgress(65,'Correspondances communes–CLPE…');
-  CLPE_COMMUNES = await fetch('data/clpe_communes.json').then(r=>r.json());
-
-  setProgress(74,'Préparation…');
+  setProgress(72, 'Construction des index…');
+  buildLookups();
+  buildComLists();
   buildCentroids();
   buildCascading();
 
-  setProgress(80,'Masque mondial…');
+  setProgress(82, 'Masque mondial…');
   await addWorldMask();
 
-  setProgress(90,'Construction des couches…');
+  setProgress(91, 'Construction des couches cartographiques…');
   buildLayers();
 
-  setProgress(97,'Finalisation…');
+  setProgress(97, 'Finalisation…');
   populateDropdowns();
   updateNavBar();
 
-  setTimeout(()=>{
-    setProgress(100,'Prêt !');
-    const o=document.getElementById('loading');
+  setTimeout(() => {
+    setProgress(100, 'Prêt !');
+    const o = document.getElementById('loading');
     o.classList.add('fade-out');
-    setTimeout(()=>o.remove(),600);
-  },200);
+    setTimeout(() => o.remove(), 600);
+  }, 200);
 }
 
-// ─── Masque mondial ───────────────────────────────────────────────────────
+// ─── Masque mondial ────────────────────────────────────────────────────────
 async function addWorldMask() {
   try {
-    const res=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
-    const world=await res.json();
-    const mask={type:'FeatureCollection',features:world.features.filter(f=>{
-      const iso=(f.properties&&(f.properties.ISO_A3||f.properties.iso_a3))||'';
-      return iso!=='FRA';
+    const res = await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+    const world = await res.json();
+    const mask = { type: 'FeatureCollection', features: world.features.filter(f => {
+      const iso = (f.properties && (f.properties.ISO_A3 || f.properties.iso_a3)) || '';
+      return iso !== 'FRA';
     })};
-    L.geoJSON(mask,{style:{fillColor:'#0c1825',fillOpacity:1,color:'#0c1825',weight:0},interactive:false}).addTo(map);
-  } catch(e){console.warn('Masque mondial indisponible:',e);}
+    L.geoJSON(mask, { style: { fillColor: '#0c1825', fillOpacity: 1, color: '#0c1825', weight: 0 }, interactive: false }).addTo(map);
+  } catch(e) { console.warn('Masque mondial indisponible:', e); }
 }
 
-// ─── Couches cartographiques ──────────────────────────────────────────────
-const tooltip = L.tooltip({className:'tooltip-clpe',permanent:false,direction:'top',offset:[0,-10]});
+// ─── Tooltip commun ────────────────────────────────────────────────────────
+const tooltip = L.tooltip({ className: 'tooltip-clpe', permanent: false, direction: 'top', offset: [0, -10] });
+
+function ttHTML(p, com) {
+  return `<span class="tt-region">📍 ${p.reg || '—'}</span>`
+       + `<span class="tt-dep">🏛 ${p.dep || '—'}</span>`
+       + (com ? `<span class="tt-com">🏘 ${com}</span>` : '')
+       + `<span class="tt-clpe">🤝 ${p.CLPE || '—'}</span>`;
+}
+
+// ─── Couches ───────────────────────────────────────────────────────────────
 let clpeLayer, depLayer, regLayer, comLayer;
-
-function ttHTML(p, com, hint) {
-  return `<span class="tt-region">📍 ${p.reg||'—'}</span>`
-       + `<span class="tt-dep">🏛 ${p.dep||'—'}</span>`
-       + (com?`<span class="tt-com">🏘 ${com}</span>`:'')
-       + `<span class="tt-clpe">🤝 ${p.CLPE||'—'}</span>`
-       + (hint?`<span class="tt-hint">${hint}</span>`:'');
-}
+let regLabelGroup, depLabelGroup, clpeLabelGroup;
 
 function buildLayers() {
 
-  // ── Communes : contours fins ────────────────────────────────────────
-  // Poids volontairement inférieur à toutes les autres couches
-  const comCanvas = L.canvas({pane:'comPane',tolerance:1});
+  // Communes — contours précis et visibles
+  const comCanvas = L.canvas({ pane: 'comPane', tolerance: 1 });
   comLayer = L.geoJSON(COM_DATA, {
-    renderer:comCanvas, pane:'comPane',
-    style:{weight:0.3, color:'rgba(140,200,240,0.18)', fill:false},
-    interactive:false
+    renderer: comCanvas, pane: 'comPane',
+    style: { weight: 1.3, color: 'rgba(100,180,240,0.55)', fill: false },
+    interactive: false
   }).addTo(map);
 
-  map.on('zoomend', ()=>{
-    const z=map.getZoom();
-    const op = z>=11?0.55 : z>=9?0.38 : z>=7?0.22 : 0.13;
-    const w  = z>=10?0.4 : 0.3;
-    comLayer.setStyle({color:`rgba(140,200,240,${op})`,weight:w});
+  map.on('zoomend', () => {
+    const z = map.getZoom();
+    const op = z >= 12 ? 0.9 : z >= 10 ? 0.75 : z >= 8 ? 0.6 : z >= 7 ? 0.5 : 0.38;
+    const w  = z >= 12 ? 1.8 : z >= 10 ? 1.5 : z >= 8 ? 1.3 : 1.2;
+    comLayer.setStyle({ color: `rgba(100,180,240,${op})`, weight: w });
   });
 
-  // ── CLPE : couche principale (remplie) ──────────────────────────────
-  const clpeCanvas = L.canvas({pane:'clpePane',tolerance:2});
+  // CLPE — toujours interactif pour le survol (tooltip à tout niveau de zoom)
+  const clpeCanvas = L.canvas({ pane: 'clpePane', tolerance: 2 });
   clpeLayer = L.geoJSON(CLPE_DATA, {
-    renderer:clpeCanvas, pane:'clpePane',
-    style:feat=>({weight:0.9, color:'rgba(20,60,110,0.5)', fillColor:clpeColor(feat.properties.color_idx||0), fillOpacity:0.72}),
-    onEachFeature(feat,layer){
-      const p=feat.properties;
-      layer.on('mouseover', e=>{
-        layer.setStyle({weight:2.5,color:'#7ec8f4',fillOpacity:.9});
-        tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat),'Cliquez pour zoomer et exporter')).addTo(map);
+    renderer: clpeCanvas, pane: 'clpePane',
+    style: feat => ({
+      weight: 1.0, color: 'rgba(20,60,110,0.5)',
+      fillColor: clpeColor(feat.properties.color_idx || 0), fillOpacity: 0.72
+    }),
+    onEachFeature(feat, layer) {
+      const p = feat.properties;
+      layer.on('mouseover', e => {
+        layer.setStyle({ weight: 2.5, color: '#7ec8f4', fillOpacity: .9 });
+        tooltip.setLatLng(e.latlng).setContent(ttHTML(p, nearestCommune(e.latlng.lng, e.latlng.lat))).addTo(map);
       });
-      layer.on('mousemove', e=>{
-        tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat),'Cliquez pour zoomer et exporter'));
+      layer.on('mousemove', e => {
+        tooltip.setLatLng(e.latlng).setContent(ttHTML(p, nearestCommune(e.latlng.lng, e.latlng.lat)));
       });
-      layer.on('mouseout', ()=>{clpeLayer.resetStyle(layer); map.removeLayer(tooltip);});
-      layer.on('click', ()=>{
-        nav.clpe=p.CLPE;
-        if(!nav.department) nav.department=p.dep;
-        if(!nav.region)     nav.region=p.reg;
-        navLevel='clpe';
-        document.getElementById('sel-region').value=nav.region||'';
+      layer.on('mouseout', () => { clpeLayer.resetStyle(layer); map.removeLayer(tooltip); });
+      // Clic → sélection + panel export ; PAS de zoom
+      layer.on('click', () => {
+        nav.clpe = p.CLPE;
+        if (!nav.department) nav.department = p.dep;
+        if (!nav.region)     nav.region = p.reg;
+        navLevel = 'clpe';
+        document.getElementById('sel-region').value = nav.region || '';
         repopulateDeps(nav.region);
-        document.getElementById('sel-dep').value=nav.department||'';
-        repopulateClpes(nav.region,nav.department);
-        document.getElementById('sel-clpe').value=p.CLPE;
-        updatePanes(); updateNavBar();
-        zoomToBbox(feat.properties.bbox);
+        document.getElementById('sel-dep').value = nav.department || '';
+        repopulateClpes(nav.region, nav.department);
+        document.getElementById('sel-clpe').value = p.CLPE;
+        updateNavBar();
         showExportPanel(p.CLPE);
       });
     }
   }).addTo(map);
 
-  // ── Départements : contours interactifs ────────────────────────────
-  const depSvg = L.svg({pane:'depPane'});
-  depLayer = L.geoJSON(DEP_DATA,{
-    renderer:depSvg, pane:'depPane',
-    style:{weight:1.5,color:'#e8a030',fill:false},
-    onEachFeature(feat,layer){
-      layer.on('mouseover',()=>layer.setStyle({weight:2.5,color:'#ffd080'}));
-      layer.on('mouseout', ()=>depLayer.resetStyle(layer));
-      layer.on('click',()=>{
-        const p=feat.properties;
-        nav.department=p.nom_officiel;
-        nav.clpe=null;
-        if(!nav.region) nav.region=depToRegName[p.nom_officiel]||null;
-        navLevel='department';
-        document.getElementById('sel-region').value=nav.region||'';
-        repopulateDeps(nav.region);
-        document.getElementById('sel-dep').value=p.nom_officiel;
-        repopulateClpes(nav.region,p.nom_officiel);
-        document.getElementById('sel-clpe').value='';
-        hideExportPanel(); updatePanes(); updateNavBar();
-        zoomToBbox(p.bbox);
-      });
-    }
+  // Départements — contours visuels seulement (pas de clic, pas de zoom)
+  depLayer = L.geoJSON(DEP_DATA, {
+    renderer: L.svg({ pane: 'depPane' }), pane: 'depPane',
+    style: { weight: 2.0, color: '#e8a030', fill: false },
+    interactive: false
   }).addTo(map);
 
-  // ── Régions : contours interactifs ─────────────────────────────────
-  const regSvg = L.svg({pane:'regPane'});
-  regLayer = L.geoJSON(REG_DATA,{
-    renderer:regSvg, pane:'regPane',
-    style:{weight:2.8,color:'#e8c040',fill:false},
-    onEachFeature(feat,layer){
-      layer.on('mouseover',()=>layer.setStyle({weight:4,color:'#ffe870'}));
-      layer.on('mouseout', ()=>regLayer.resetStyle(layer));
-      layer.on('click',()=>{
-        const p=feat.properties;
-        nav.region=p.nom_officiel; nav.department=null; nav.clpe=null;
-        navLevel='region';
-        document.getElementById('sel-region').value=p.nom_officiel;
-        repopulateDeps(p.nom_officiel);
-        repopulateClpes(p.nom_officiel,'');
-        document.getElementById('sel-dep').value='';
-        document.getElementById('sel-clpe').value='';
-        hideExportPanel(); updatePanes(); updateNavBar();
-        zoomToBbox(p.bbox);
-      });
-    }
+  // Régions — contours visuels seulement
+  regLayer = L.geoJSON(REG_DATA, {
+    renderer: L.svg({ pane: 'regPane' }), pane: 'regPane',
+    style: { weight: 3.0, color: '#e8c040', fill: false },
+    interactive: false
   }).addTo(map);
 
   buildLabels();
 }
 
-// ─── Étiquettes ───────────────────────────────────────────────────────────
-let regLabelGroup, depLabelGroup;
+// ─── Étiquettes ────────────────────────────────────────────────────────────
 function buildLabels() {
-  const mki = html => L.divIcon({className:'',html,iconAnchor:[0,0]});
-  regLabelGroup = L.layerGroup(REG_DATA.features.map(f=>{
-    const b=f.properties.bbox;
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{
-      icon:mki(`<div style="font-size:.84rem;color:#ffe070;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none">${f.properties.nom_officiel}</div>`),
-      interactive:false
+  const mki = html => L.divIcon({ className: '', html, iconAnchor: [0, 0] });
+
+  regLabelGroup = L.layerGroup(REG_DATA.features.map(f => {
+    const b = f.properties.bbox;
+    return L.marker([(b[1]+b[3])/2, (b[0]+b[2])/2], {
+      icon: mki(`<div style="font-size:.84rem;color:#ffe070;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none">${f.properties.nom_officiel}</div>`),
+      interactive: false
     });
   }));
-  depLabelGroup = L.layerGroup(DEP_DATA.features.map(f=>{
-    const b=f.properties.bbox;
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{
-      icon:mki(`<div style="font-size:.59rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none">${f.properties.nom_officiel}</div>`),
-      interactive:false
+
+  depLabelGroup = L.layerGroup(DEP_DATA.features.map(f => {
+    const b = f.properties.bbox;
+    return L.marker([(b[1]+b[3])/2, (b[0]+b[2])/2], {
+      icon: mki(`<div style="font-size:.6rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none">${f.properties.nom_officiel}</div>`),
+      interactive: false
     });
   }));
-  map.on('zoomend',syncLabels);
+
+  // Étiquettes CLPE : affichées au niveau département (zoom ≥ 8.5)
+  clpeLabelGroup = L.layerGroup(CLPE_DATA.features.map(f => {
+    const b = f.properties.bbox;
+    return L.marker([(b[1]+b[3])/2, (b[0]+b[2])/2], {
+      icon: mki(`<div class="clpe-label">${f.properties.CLPE}</div>`),
+      interactive: false
+    });
+  }));
+
+  map.on('zoomend', syncLabels);
   syncLabels();
 }
+
 function syncLabels() {
-  const z=map.getZoom();
-  z<=7 ? (!map.hasLayer(regLabelGroup) && regLabelGroup.addTo(map)) : (map.hasLayer(regLabelGroup) && map.removeLayer(regLabelGroup));
-  z>=7.5 ? (!map.hasLayer(depLabelGroup) && depLabelGroup.addTo(map)) : (map.hasLayer(depLabelGroup) && map.removeLayer(depLabelGroup));
+  const z = map.getZoom();
+  // Régions : zoom vue nationale (≤ 7)
+  z <= 7   ? (!map.hasLayer(regLabelGroup)  && regLabelGroup.addTo(map))
+           : (map.hasLayer(regLabelGroup)   && map.removeLayer(regLabelGroup));
+  // Départements : zoom intermédiaire (7 – 8.5)
+  (z > 7 && z < 8.5) ? (!map.hasLayer(depLabelGroup) && depLabelGroup.addTo(map))
+                     : (map.hasLayer(depLabelGroup)   && map.removeLayer(depLabelGroup));
+  // CLPE : zoom département / CLPE (≥ 8.5)
+  z >= 8.5 ? (!map.hasLayer(clpeLabelGroup) && clpeLabelGroup.addTo(map))
+           : (map.hasLayer(clpeLabelGroup)  && map.removeLayer(clpeLabelGroup));
 }
 
-// ─── Dropdowns ───────────────────────────────────────────────────────────
+// ─── Dropdowns ─────────────────────────────────────────────────────────────
 function populateDropdowns() {
-  REG_DATA.features.map(f=>f.properties.nom_officiel).sort().forEach(n=>document.getElementById('sel-region').add(new Option(n,n)));
-  allDeps.forEach(n=>document.getElementById('sel-dep').add(new Option(n,n)));
-  allClpes.forEach(n=>document.getElementById('sel-clpe').add(new Option(n,n)));
+  REG_DATA.features.map(f => f.properties.nom_officiel).sort()
+    .forEach(n => document.getElementById('sel-region').add(new Option(n, n)));
+  allDeps.forEach(n  => document.getElementById('sel-dep').add(new Option(n, n)));
+  allClpes.forEach(n => document.getElementById('sel-clpe').add(new Option(n, n)));
 }
+
 function repopulateDeps(regName) {
-  const sel=document.getElementById('sel-dep'), saved=sel.value;
-  sel.innerHTML='<option value="">— Tous les départements —</option>';
-  const list=regName?(regToDeps[regName]||[]):allDeps;
-  list.forEach(n=>sel.add(new Option(n,n)));
-  if(list.includes(saved)) sel.value=saved;
+  const sel = document.getElementById('sel-dep'), saved = sel.value;
+  sel.innerHTML = '<option value="">— Tous les départements —</option>';
+  const list = regName ? (regToDeps[regName] || []) : allDeps;
+  list.forEach(n => sel.add(new Option(n, n)));
+  if (list.includes(saved)) sel.value = saved;
 }
-function repopulateClpes(regName,depName) {
-  const sel=document.getElementById('sel-clpe'), saved=sel.value;
-  sel.innerHTML='<option value="">— Tous les CLPE —</option>';
+
+function repopulateClpes(regName, depName) {
+  const sel = document.getElementById('sel-clpe'), saved = sel.value;
+  sel.innerHTML = '<option value="">— Tous les CLPE —</option>';
   let list;
-  if(depName){ list=(depToClpes[depName]||[]).slice(); }
-  else if(regName){ const seen={}; list=[]; CLPE_DATA.features.forEach(f=>{if(f.properties.reg===regName&&!seen[f.properties.CLPE]){seen[f.properties.CLPE]=true;list.push(f.properties.CLPE);}}); list.sort(); }
-  else { list=allClpes; }
-  list.forEach(n=>sel.add(new Option(n,n)));
-  if(list.includes(saved)) sel.value=saved;
+  if (depName) {
+    list = (depToClpes[depName] || []).slice();
+  } else if (regName) {
+    const seen = {};
+    list = [];
+    CLPE_DATA.features.forEach(f => {
+      if (f.properties.reg === regName && !seen[f.properties.CLPE]) {
+        seen[f.properties.CLPE] = true; list.push(f.properties.CLPE);
+      }
+    });
+    list.sort();
+  } else {
+    list = allClpes;
+  }
+  list.forEach(n => sel.add(new Option(n, n)));
+  if (list.includes(saved)) sel.value = saved;
 }
 
 function onRegionChange() {
-  const rn=document.getElementById('sel-region').value;
-  document.getElementById('sel-dep').value='';
-  document.getElementById('sel-clpe').value='';
-  repopulateDeps(rn); repopulateClpes(rn,'');
+  const rn = document.getElementById('sel-region').value;
+  document.getElementById('sel-dep').value = '';
+  document.getElementById('sel-clpe').value = '';
+  repopulateDeps(rn); repopulateClpes(rn, '');
   hideExportPanel();
-  if(!rn){ resetView(); return; }
-  nav.region=rn; nav.department=null; nav.clpe=null;
-  navLevel='region'; updatePanes(); updateNavBar();
-  const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);
-  if(f) zoomToBbox(f.properties.bbox);
+  if (!rn) { resetView(); return; }
+  nav.region = rn; nav.department = null; nav.clpe = null;
+  navLevel = 'region'; updateNavBar();
+  const f = REG_DATA.features.find(f => f.properties.nom_officiel === rn);
+  if (f) zoomToBbox(f.properties.bbox);
 }
+
 function onDepChange() {
-  const rn=document.getElementById('sel-region').value;
-  const dn=document.getElementById('sel-dep').value;
-  document.getElementById('sel-clpe').value='';
-  repopulateClpes(rn,dn); hideExportPanel();
-  if(!dn){ nav.department=null; nav.clpe=null; navLevel=rn?'region':'national'; if(rn)nav.region=rn; else nav.region=null; updatePanes(); updateNavBar(); if(rn){const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);} return; }
-  nav.department=dn; nav.clpe=null;
+  const rn = document.getElementById('sel-region').value;
+  const dn = document.getElementById('sel-dep').value;
+  document.getElementById('sel-clpe').value = '';
+  repopulateClpes(rn, dn); hideExportPanel();
+  if (!dn) {
+    nav.department = null; nav.clpe = null;
+    navLevel = rn ? 'region' : 'national';
+    nav.region = rn || null; updateNavBar();
+    if (rn) { const f = REG_DATA.features.find(f => f.properties.nom_officiel === rn); if (f) zoomToBbox(f.properties.bbox); }
+    return;
+  }
+  nav.department = dn; nav.clpe = null;
   nav.region = rn || depToRegName[dn] || null;
-  navLevel='department'; updatePanes(); updateNavBar();
-  const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===dn);
-  if(f) zoomToBbox(f.properties.bbox);
+  navLevel = 'department'; updateNavBar();
+  const f = DEP_DATA.features.find(f => f.properties.nom_officiel === dn);
+  if (f) zoomToBbox(f.properties.bbox);
 }
+
 function onClpeChange() {
-  const cn=document.getElementById('sel-clpe').value;
-  if(!cn){ nav.clpe=null; const dn=document.getElementById('sel-dep').value, rn=document.getElementById('sel-region').value; navLevel=dn?'department':rn?'region':'national'; hideExportPanel(); updatePanes(); updateNavBar(); return; }
-  const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);
-  if(!feat) return;
-  const p=feat.properties;
-  nav.clpe=cn;
-  if(!nav.department) nav.department=p.dep;
-  if(!nav.region)     nav.region=p.reg;
-  navLevel='clpe'; updatePanes(); updateNavBar();
+  const cn = document.getElementById('sel-clpe').value;
+  if (!cn) {
+    nav.clpe = null;
+    const dn = document.getElementById('sel-dep').value, rn = document.getElementById('sel-region').value;
+    navLevel = dn ? 'department' : rn ? 'region' : 'national';
+    hideExportPanel(); updateNavBar(); return;
+  }
+  const feat = CLPE_DATA.features.find(f => f.properties.CLPE === cn);
+  if (!feat) return;
+  const p = feat.properties;
+  nav.clpe = cn;
+  if (!nav.department) nav.department = p.dep;
+  if (!nav.region)     nav.region = p.reg;
+  navLevel = 'clpe'; updateNavBar();
   zoomToBbox(p.bbox);
   showExportPanel(cn);
 }
 
-// ─── Export panel ─────────────────────────────────────────────────────────
+// ─── Panel export CLPE ─────────────────────────────────────────────────────
 let _communes = [];
 function showExportPanel(clpeName) {
-  const raw = CLPE_COMMUNES?.[clpeName] || [];
-  _communes = raw.slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
-  document.getElementById('export-clpe-title').textContent = clpeName;
-  document.getElementById('export-count').textContent = _communes.length+' commune'+(_communes.length>1?'s':'');
-  document.getElementById('export-search').value='';
+  _communes = (comByClpe[clpeName] || []).slice().sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  document.getElementById('export-clpe-title').textContent = '🤝 ' + clpeName;
+  document.getElementById('export-count').textContent = _communes.length + ' commune' + (_communes.length > 1 ? 's' : '');
+  document.getElementById('export-search').value = '';
   renderList(_communes);
   document.getElementById('export-panel').classList.add('open');
 }
+
+function openCLPEPanel() { if (nav.clpe) showExportPanel(nav.clpe); }
+
 function renderList(list) {
   document.getElementById('export-list').innerHTML = list.length
-    ? list.map(c=>`<div class="com-item"><span class="com-code">${c.code}</span><span class="com-name">${c.nom}</span></div>`).join('')
+    ? list.map(c => `<div class="com-item"><span class="com-code">${c.code}</span><span class="com-name">${c.nom}</span></div>`).join('')
     : '<div style="padding:14px;color:#2a5070;font-size:.73rem;">Aucune commune trouvée.</div>';
 }
+
 function filterExportList(q) {
-  renderList(q ? _communes.filter(c=>c.nom.toLowerCase().includes(q.toLowerCase())||c.code.includes(q)) : _communes);
+  renderList(q ? _communes.filter(c => c.nom.toLowerCase().includes(q.toLowerCase()) || c.code.includes(q)) : _communes);
 }
+
 function hideExportPanel() { document.getElementById('export-panel').classList.remove('open'); }
+
 function exportCSV() {
-  if(!nav.clpe||!_communes.length) return;
-  const rows=[['Code INSEE','Commune','CLPE','Département','Région'],..._communes.map(c=>[c.code,c.nom,nav.clpe,nav.department||'',nav.region||''])];
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download='communes_'+nav.clpe.replace(/[^a-zA-Z0-9\-]/g,'_')+'.csv';
+  if (!nav.clpe || !_communes.length) return;
+  const rows = [
+    ['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département','Région'],
+    ..._communes.map(c => [c.code, c.nom, c.clpe, c.dep, c.reg])
+  ];
+  downloadCSV(rows, 'communes_CLPE_' + nav.clpe.replace(/[^a-zA-Z0-9\-]/g, '_'));
+}
+
+// ─── Exports CSV ───────────────────────────────────────────────────────────
+function exportRegion() {
+  if (!nav.region) return;
+  const list = (comByReg[nav.region] || []).slice().sort((a, b) => a.dep.localeCompare(b.dep,'fr') || a.nom.localeCompare(b.nom,'fr'));
+  const rows = [
+    ['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département'],
+    ...list.map(c => [c.code, c.nom, c.clpe, c.dep])
+  ];
+  downloadCSV(rows, 'communes_region_' + nav.region.replace(/[^a-zA-Z0-9\-]/g, '_'));
+}
+
+function exportDep() {
+  if (!nav.department) return;
+  const list = (comByDep[nav.department] || []).slice().sort((a, b) => a.nom.localeCompare(b.nom,'fr'));
+  const rows = [
+    ['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département'],
+    ...list.map(c => [c.code, c.nom, c.clpe, c.dep])
+  ];
+  downloadCSV(rows, 'communes_dep_' + nav.department.replace(/[^a-zA-Z0-9\-]/g, '_'));
+}
+
+function exportNational() {
+  const all = [];
+  Object.values(comByReg).forEach(list => all.push(...list));
+  all.sort((a, b) => a.reg.localeCompare(b.reg,'fr') || a.dep.localeCompare(b.dep,'fr') || a.nom.localeCompare(b.nom,'fr'));
+  const rows = [
+    ['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département','Région'],
+    ...all.map(c => [c.code, c.nom, c.clpe, c.dep, c.reg])
+  ];
+  downloadCSV(rows, 'communes_CLPE_France_entiere');
+}
+
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = filename + '.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-// ─── Zoom utils ───────────────────────────────────────────────────────────
+// ─── Zoom ──────────────────────────────────────────────────────────────────
 function zoomToBbox(bbox) {
-  map.fitBounds([[bbox[1],bbox[0]],[bbox[3],bbox[2]]],{padding:[45,45],maxZoom:12});
-}
-function resetView() {
-  nav={region:null,department:null,clpe:null};
-  navLevel='national';
-  document.getElementById('sel-region').value='';
-  document.getElementById('sel-dep').value='';
-  document.getElementById('sel-clpe').value='';
-  repopulateDeps(''); repopulateClpes('','');
-  hideExportPanel(); updatePanes(); updateNavBar();
-  map.setView([46.5,2.5],6);
+  map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], { padding: [45, 45], maxZoom: 12 });
 }
 
-// ─── Démarrage ────────────────────────────────────────────────────────────
-loadAll().catch(e=>{ status.textContent='Erreur : '+e.message; bar.style.background='#c0392b'; console.error(e); });
+function resetView() {
+  nav = { region: null, department: null, clpe: null };
+  navLevel = 'national';
+  document.getElementById('sel-region').value = '';
+  document.getElementById('sel-dep').value = '';
+  document.getElementById('sel-clpe').value = '';
+  repopulateDeps(''); repopulateClpes('', '');
+  hideExportPanel(); updateNavBar();
+  map.setView([46.5, 2.5], 6);
+}
+
+// ─── Démarrage ─────────────────────────────────────────────────────────────
+loadAll().catch(e => {
+  status.textContent = 'Erreur : ' + e.message;
+  bar.style.background = '#c0392b';
+  console.error(e);
+});
 </script>
 </body>
 </html>
