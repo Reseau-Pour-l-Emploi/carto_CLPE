@@ -1,848 +1,402 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carte des CLPE – France</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comités Locaux pour l'Emploi — France</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1923; color: #e0e8f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* ── Header ── */
+  #header {
+    background: linear-gradient(135deg, #0a2540 0%, #1a3a5c 100%);
+    padding: 12px 20px;
+    border-bottom: 1px solid #1e4060;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  #header-title h1 { font-size: 1.05rem; font-weight: 700; color: #7ec8f4; letter-spacing: 0.3px; }
+  #header-title p  { font-size: 0.68rem; color: #5a7a98; margin-top: 2px; }
 
-    html, body {
-      height: 100%;
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: #0f172a;
-      overflow: hidden;
-    }
+  #controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .ctrl-group { display: flex; flex-direction: column; gap: 3px; }
+  .ctrl-group label { font-size: 0.62rem; color: #5a7a98; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+  select {
+    background: #0d2035;
+    color: #c8dff0;
+    border: 1px solid #1e4060;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    outline: none;
+    min-width: 170px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  select:hover  { border-color: #4a9fd4; }
+  select:focus  { border-color: #4a9fd4; box-shadow: 0 0 0 2px rgba(74,159,212,0.2); }
+  .btn-reset {
+    background: transparent;
+    color: #7ec8f4;
+    border: 1px solid #2a5a8c;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .btn-reset:hover { background: #1a3a5c; border-color: #4a9fd4; }
 
-    /* ── MAP ── */
-    #map { position: fixed; inset: 0; z-index: 1; }
+  /* ── Map ── */
+  #map { flex: 1; }
 
-    /* ── LOADING OVERLAY ── */
-    #overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-      display: flex; align-items: center; justify-content: center;
-      transition: opacity 0.6s ease;
-    }
-    #overlay.hide { opacity: 0; pointer-events: none; }
+  /* ── Loading overlay ── */
+  #loading {
+    position: fixed; inset: 0;
+    background: #0a1520;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s;
+  }
+  #loading.fade-out { opacity: 0; pointer-events: none; }
+  #loading-logo { font-size: 2.5rem; margin-bottom: 20px; }
+  #loading h2 { color: #7ec8f4; font-size: 1rem; margin-bottom: 24px; font-weight: 500; }
+  #loading-bar-wrap {
+    width: 280px; height: 4px;
+    background: #1a3a5c;
+    border-radius: 4px; overflow: hidden;
+  }
+  #loading-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #1a7abf, #7ec8f4);
+    width: 0%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  #loading-status { color: #4a7a9a; font-size: 0.72rem; margin-top: 10px; }
 
-    .ov-card {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(147, 197, 253, 0.2);
-      border-radius: 16px;
-      padding: 2.5rem 3rem;
-      min-width: 380px;
-      max-width: 480px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
-    }
+  /* ── Tooltip CLPE ── */
+  .tooltip-clpe {
+    background: rgba(6, 16, 28, 0.94) !important;
+    border: 1px solid #2a6090 !important;
+    color: #a8d8f8 !important;
+    font-size: 0.78rem !important;
+    padding: 6px 11px !important;
+    border-radius: 7px !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.6) !important;
+    pointer-events: none !important;
+    max-width: 240px !important;
+    line-height: 1.4 !important;
+  }
+  .tooltip-clpe::before { display: none !important; }
 
-    .ov-flag {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 1.8rem;
-    }
-    .ov-flag-stripes { display: flex; border-radius: 4px; overflow: hidden; height: 22px; width: 34px; flex-shrink: 0; }
-    .ov-flag-stripes span { flex: 1; }
-    .ov-flag-stripes span:nth-child(1) { background: #002395; }
-    .ov-flag-stripes span:nth-child(2) { background: #fff; }
-    .ov-flag-stripes span:nth-child(3) { background: #ED2939; }
-    .ov-title {
-      font-size: 1.25rem; font-weight: 700; color: #f0f9ff;
-      letter-spacing: 0.01em;
-    }
-    .ov-sub {
-      font-size: 0.78rem; color: #93c5fd; font-weight: 500;
-      letter-spacing: 0.06em; text-transform: uppercase;
-    }
-
-    .ov-step {
-      font-size: 0.82rem; color: #7dd3fc;
-      margin-bottom: 1rem; min-height: 1.2em;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .ov-track {
-      background: rgba(255,255,255,0.07);
-      border-radius: 9999px; height: 6px; overflow: hidden; margin-bottom: 0.8rem;
-    }
-    .ov-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #2563eb, #60a5fa, #38bdf8);
-      border-radius: 9999px; width: 0%;
-      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
-    }
-
-    .ov-hint {
-      font-size: 0.72rem; color: #475569;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .ov-hint::before { content: 'ℹ'; font-size: 0.7rem; color: #3b82f6; }
-
-    /* ── LEGEND ── */
-    #legend {
-      position: absolute; top: 14px; right: 14px; z-index: 1000;
-      background: rgba(255,255,255,0.97);
-      border-radius: 12px; padding: 14px 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      font-size: 12px; min-width: 160px;
-      border: 1px solid rgba(0,0,0,0.06);
-    }
-    #legend h4 {
-      font-size: 12px; font-weight: 700; color: #1e3a8a;
-      margin-bottom: 10px; padding-bottom: 8px;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-    .leg-sw {
-      width: 22px; height: 13px; border-radius: 3px; flex-shrink: 0;
-      border: 1px solid rgba(0,0,0,0.12);
-    }
-    .leg-lbl { color: #374151; font-size: 11px; }
-
-    /* ── DOM PANEL ── */
-    #dom-panel {
-      position: absolute; bottom: 40px; left: 10px; z-index: 1000;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .inset-card {
-      background: white; border: 1.5px solid #bfdbfe;
-      border-radius: 7px; overflow: hidden;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.18);
-    }
-    .inset-hdr {
-      background: linear-gradient(90deg, #1d4ed8, #2563eb);
-      color: white; font-size: 9px; font-weight: 700;
-      padding: 2px 6px; text-align: center;
-      letter-spacing: 0.07em; text-transform: uppercase;
-    }
-    .inset-body { width: 130px; height: 76px; }
-
-    /* ── LABEL MARKERS ── */
-    .lbl-marker { background: transparent !important; border: none !important; }
-    .lbl-region {
-      font-size: 11px; font-weight: 700; color: #1e3a8a;
-      text-shadow: 1px 1px 0 rgba(255,255,255,0.9), -1px -1px 0 rgba(255,255,255,0.9),
-                   1px -1px 0 rgba(255,255,255,0.9), -1px 1px 0 rgba(255,255,255,0.9);
-      white-space: nowrap; pointer-events: none;
-      text-transform: uppercase; letter-spacing: 0.07em;
-    }
-    .lbl-dept {
-      font-size: 9px; font-weight: 600; color: #475569;
-      text-shadow: 1px 1px 0 rgba(255,255,255,0.85), -1px -1px 0 rgba(255,255,255,0.85);
-      white-space: nowrap; pointer-events: none;
-    }
-
-    /* ── CLPE TOOLTIP ── */
-    .leaflet-tooltip.tt-clpe {
-      background: rgba(30, 58, 138, 0.93);
-      color: white; border: 1px solid rgba(147,197,253,0.4);
-      border-radius: 6px; padding: 5px 11px;
-      font-size: 12px; font-weight: 600;
-      font-family: 'DM Sans', system-ui, sans-serif;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-      max-width: 300px;
-    }
-    .leaflet-tooltip.tt-clpe::before { border-top-color: rgba(30,58,138,0.93); }
-
-    /* ── CTRL BUTTONS ── */
-    #map-ctrl {
-      position: absolute; bottom: 40px; right: 14px; z-index: 1000;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .ctrl-btn {
-      background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0;
-      border-radius: 8px; padding: 7px 11px;
-      font-size: 11px; font-weight: 600; color: #1e3a8a;
-      cursor: pointer; white-space: nowrap;
-      transition: background 0.15s, box-shadow 0.15s;
-      font-family: inherit; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .ctrl-btn:hover { background: #eff6ff; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
-    .ctrl-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
-
-    /* ── STATS BAR ── */
-    #stats-bar {
-      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-      z-index: 1000; background: rgba(255,255,255,0.97);
-      border-radius: 10px; padding: 7px 18px;
-      display: flex; gap: 20px; align-items: center;
-      box-shadow: 0 3px 14px rgba(0,0,0,0.12);
-      border: 1px solid rgba(0,0,0,0.06);
-      font-size: 11px; font-weight: 600;
-      display: none; /* shown after load */
-    }
-    .stat-item { display: flex; align-items: center; gap: 6px; color: #475569; }
-    .stat-num { color: #1d4ed8; font-size: 14px; font-weight: 700; }
-
-    /* Leaflet overrides */
-    .leaflet-control-attribution { font-size: 9px; }
-  </style>
+  /* ── Legend ── */
+  #legend {
+    position: absolute;
+    bottom: 30px; right: 14px;
+    background: rgba(6, 16, 28, 0.9);
+    border: 1px solid #1e4060;
+    border-radius: 9px;
+    padding: 11px 15px;
+    font-size: 0.72rem;
+    z-index: 1000;
+    min-width: 175px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  #legend h3 { color: #7ec8f4; font-size: 0.74rem; margin-bottom: 9px; font-weight: 700; letter-spacing: 0.3px; }
+  .leg-item { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; color: #90b8d0; }
+  .leg-swatch { width: 26px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .leg-line   { width: 26px; flex-shrink: 0; }
+</style>
 </head>
 <body>
 
-<!-- ═══════════════ LOADING OVERLAY ═══════════════ -->
-<div id="overlay">
-  <div class="ov-card">
-    <div class="ov-flag">
-      <div class="ov-flag-stripes"><span></span><span></span><span></span></div>
-      <div>
-        <div class="ov-title">Carte des CLPE</div>
-        <div class="ov-sub">Comités Locaux Pour l'Emploi</div>
-      </div>
+<!-- Loading -->
+<div id="loading">
+  <div id="loading-logo">🗺</div>
+  <h2>Chargement de la carte…</h2>
+  <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+  <div id="loading-status">Initialisation…</div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div id="header-title">
+    <h1>Comités Locaux pour l'Emploi — France</h1>
+    <p>362 comités locaux · Survolez un territoire pour en afficher le nom · Cliquez pour zoomer</p>
+  </div>
+  <div id="controls">
+    <div class="ctrl-group">
+      <label>Région</label>
+      <select id="sel-region" onchange="zoomToSelection('region')">
+        <option value="">— Toutes les régions —</option>
+      </select>
     </div>
-    <div id="ov-step" class="ov-step">Initialisation…</div>
-    <div class="ov-track"><div id="ov-bar" class="ov-bar"></div></div>
-    <div class="ov-hint">
-      Données : ADMIN-EXPRESS-COG-CARTO (IGN) · Fond WMTS Géoportail
+    <div class="ctrl-group">
+      <label>Département</label>
+      <select id="sel-dep" onchange="zoomToSelection('dep')">
+        <option value="">— Tous les départements —</option>
+      </select>
     </div>
+    <div class="ctrl-group">
+      <label>Comité Local pour l'Emploi</label>
+      <select id="sel-clpe" onchange="zoomToSelection('clpe')">
+        <option value="">— Tous les CLPE —</option>
+      </select>
+    </div>
+    <button class="btn-reset" onclick="resetView()">↺ Vue d'ensemble</button>
   </div>
 </div>
 
-<!-- ═══════════════ MAP ═══════════════ -->
+<!-- Map -->
 <div id="map"></div>
 
-<!-- ═══════════════ DOM INSETS ═══════════════ -->
-<div id="dom-panel">
-  <div class="inset-card"><div class="inset-hdr">Guadeloupe</div><div class="inset-body" id="map-971"></div></div>
-  <div class="inset-card"><div class="inset-hdr">Martinique</div><div class="inset-body" id="map-972"></div></div>
-  <div class="inset-card"><div class="inset-hdr">Guyane</div>    <div class="inset-body" id="map-973"></div></div>
-  <div class="inset-card"><div class="inset-hdr">La Réunion</div><div class="inset-body" id="map-974"></div></div>
-  <div class="inset-card"><div class="inset-hdr">Mayotte</div>   <div class="inset-body" id="map-976"></div></div>
-</div>
-
-<!-- ═══════════════ LEGEND ═══════════════ -->
+<!-- Legend -->
 <div id="legend">
-  <h4>🗂 Légende</h4>
-  <div class="leg-row"><div class="leg-sw" style="background:#bfdbfe;border-color:#1d4ed8;border-width:1.5px"></div><span class="leg-lbl">CLPE (polygone)</span></div>
-  <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#64748b;border-width:1.5px"></div><span class="leg-lbl">Département</span></div>
-  <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#1e3a8a;border-width:2px"></div><span class="leg-lbl">Région</span></div>
-  <div class="leg-row"><div class="leg-sw" style="background:transparent;border-color:#cbd5e1;border-width:0.5px"></div><span class="leg-lbl">Commune (zoom ≥ 10)</span></div>
-</div>
-
-<!-- ═══════════════ LAYER CONTROLS ═══════════════ -->
-<div id="map-ctrl">
-  <button class="ctrl-btn active" id="btn-clpe"    onclick="toggleLayer('clpe')">CLPE</button>
-  <button class="ctrl-btn active" id="btn-dept"    onclick="toggleLayer('dept')">Départements</button>
-  <button class="ctrl-btn active" id="btn-region"  onclick="toggleLayer('region')">Régions</button>
-  <button class="ctrl-btn active" id="btn-labels"  onclick="toggleLayer('labels')">Étiquettes</button>
-</div>
-
-<!-- ═══════════════ STATS ═══════════════ -->
-<div id="stats-bar">
-  <div class="stat-item"><span class="stat-num" id="stat-clpe">–</span> CLPE</div>
-  <div class="stat-item"><span class="stat-num" id="stat-comm">–</span> communes</div>
-  <div class="stat-item"><span class="stat-num" id="stat-assoc">–</span> communes assoc.</div>
+  <h3>Légende</h3>
+  <div class="leg-item">
+    <div class="leg-swatch" style="background:linear-gradient(90deg,#1a5276,#2980b9,#1abc9c);opacity:0.8;border:1px solid rgba(30,100,160,0.5);"></div>
+    Comité Local pour l'Emploi
+  </div>
+  <div class="leg-item">
+    <div class="leg-line"><svg width="26" height="4"><line x1="0" y1="2" x2="26" y2="2" stroke="#e8c040" stroke-width="2.5"/></svg></div>
+    Région
+  </div>
+  <div class="leg-item">
+    <div class="leg-line"><svg width="26" height="4"><line x1="0" y1="2" x2="26" y2="2" stroke="#e8a030" stroke-width="1.5"/></svg></div>
+    Département
+  </div>
+  <div class="leg-item">
+    <div class="leg-line"><svg width="26" height="4"><line x1="0" y1="2" x2="26" y2="2" stroke="rgba(140,190,230,0.35)" stroke-width="1"/></svg></div>
+    Commune
+  </div>
 </div>
 
 <script>
-const CLPE_CSV_URL = 'communes_clpe.csv';
-</script>
-<!-- ═══════════════ LIBRARIES ═══════════════ -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+// ─── Blue palette (6 shades, well-separated) ──────────────────────────────
+const PALETTE = [
+  '#1a5276', // deep navy
+  '#1f8cbf', // bright blue
+  '#117a65', // teal
+  '#154360', // dark navy
+  '#2980b9', // medium blue
+  '#1abc9c', // soft teal
+  '#0e6251', // dark teal
+  '#2471a3', // slate blue
+  '#148f77', // medium teal
+  '#1a6da0', // sea blue
+  '#0d5073', // very deep
+  '#239b56'  // muted green-teal
+];
 
-<script>
-'use strict';
+function clpeColor(idx) { return PALETTE[idx % PALETTE.length]; }
 
-/* ══════════════════════════════════════════════════════
-   CONFIGURATION
-══════════════════════════════════════════════════════ */
-const CFG = {
-  wfs: 'https://data.geopf.fr/wfs/ows',
-  wmts: 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
-       + '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png'
-       + '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-  pageSize: 2000,
-
-  // ADMIN-EXPRESS-COG-CARTO layers
-  layers: {
-    commune : 'ADMINEXPRESS-COG-CARTO.LATEST:commune',
-    assoc   : 'ADMINEXPRESS-COG-CARTO.LATEST:commune_associee_ou_deleguee',
-    dept    : 'ADMINEXPRESS-COG-CARTO.LATEST:departement',
-    region  : 'ADMINEXPRESS-COG-CARTO.LATEST:region',
-  },
-
-  // 6 harmonious blue shades (light → dark) for graph-coloring
-  blues: [
-    '#dbeafe', // 0 – très clair
-    '#93c5fd', // 1 – clair
-    '#60a5fa', // 2 – moyen clair
-    '#3b82f6', // 3 – moyen
-    '#1d4ed8', // 4 – soutenu
-    '#1e40af', // 5 – foncé
-  ],
-
-  // CLPE border stroke on each shade
-  blueStroke: [
-    '#2563eb','#1d4ed8','#1e40af','#1e3a8a','#172554','#0f1d3d',
-  ],
-
-  // DOM: [[minLat, minLng], [maxLat, maxLng]] for Leaflet fitBounds
-  dom: [
-    { id:'971', name:'Guadeloupe',  bounds:[[15.78,-62.05],[16.62,-60.98]] },
-    { id:'972', name:'Martinique',  bounds:[[14.36,-61.28],[14.89,-60.79]] },
-    { id:'973', name:'Guyane',      bounds:[[2.08, -54.62],[5.85, -51.61]] },
-    { id:'974', name:'La Réunion',  bounds:[[-21.43,55.20],[-20.85,55.87]] },
-    { id:'976', name:'Mayotte',     bounds:[[-13.08,45.00],[-12.62,45.37]] },
-  ],
-};
-
-/* ══════════════════════════════════════════════════════
-   PROGRESS UI
-══════════════════════════════════════════════════════ */
-function setStep(msg, pct) {
-  document.getElementById('ov-step').textContent = msg;
-  if (pct !== undefined)
-    document.getElementById('ov-bar').style.width = Math.min(100, pct) + '%';
-}
-function hideOverlay() {
-  const el = document.getElementById('overlay');
-  el.classList.add('hide');
-  setTimeout(() => el.style.display = 'none', 700);
-  document.getElementById('stats-bar').style.display = 'flex';
+// ─── Progress bar ─────────────────────────────────────────────────────────
+const bar    = document.getElementById('loading-bar');
+const status = document.getElementById('loading-status');
+function setProgress(pct, msg) {
+  bar.style.width = pct + '%';
+  status.textContent = msg;
 }
 
-/* ══════════════════════════════════════════════════════
-   WFS FETCHER (paginated)
-══════════════════════════════════════════════════════ */
-async function fetchWFSPage(typeName, startIndex) {
-  const url = new URL(CFG.wfs);
-  const p = url.searchParams;
-  p.set('SERVICE', 'WFS'); p.set('VERSION', '2.0.0');
-  p.set('REQUEST', 'GetFeature'); p.set('typeName', typeName);
-  p.set('outputFormat', 'application/json');
-  p.set('COUNT', CFG.pageSize); p.set('STARTINDEX', startIndex);
-  const r = await fetch(url.toString());
-  if (!r.ok) throw new Error(`WFS ${typeName} → HTTP ${r.status}`);
-  return r.json();
+// ─── Map init ─────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [46.5, 2.5], zoom: 6,
+  preferCanvas: true,
+  zoomSnap: 0.5
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 18, opacity: 0.55
+}).addTo(map);
+
+// ─── Load all data then build layers ─────────────────────────────────────
+let REG_DATA, DEP_DATA, CLPE_DATA, COM_DATA;
+
+async function loadAll() {
+  setProgress(5, 'Chargement des régions…');
+  REG_DATA  = await fetch('data/reg.json').then(r => r.json());
+  setProgress(20, 'Chargement des départements…');
+  DEP_DATA  = await fetch('data/dep.json').then(r => r.json());
+  setProgress(38, 'Chargement des comités locaux…');
+  CLPE_DATA = await fetch('data/clpe.json').then(r => r.json());
+  setProgress(55, 'Chargement des communes (données lourdes)…');
+  COM_DATA  = await fetch('data/com.json').then(r => r.json());
+  setProgress(80, 'Construction des couches…');
+  buildLayers();
+  setProgress(95, 'Finalisation…');
+  populateDropdowns();
+  setTimeout(() => {
+    setProgress(100, 'Prêt !');
+    const overlay = document.getElementById('loading');
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 600);
+  }, 200);
 }
 
-async function fetchAllWFS(typeName, label, p0, p1) {
-  const all = []; let idx = 0; let total = null;
-  while (true) {
-    const n = all.length;
-    const frac = (total && total > 0) ? Math.min(n / total, 0.95) : (idx === 0 ? 0.05 : 0.5);
-    setStep(`${label}… (${n.toLocaleString('fr')} entités)`, p0 + (p1 - p0) * frac);
-    const data = await fetchWFSPage(typeName, idx);
-    if (!total && data.totalFeatures > 0) total = data.totalFeatures;
-    const feats = data.features || [];
-    all.push(...feats);
-    if (feats.length < CFG.pageSize) break;
-    idx += CFG.pageSize;
-  }
-  return all;
-}
+// ─── Layers ───────────────────────────────────────────────────────────────
+const tooltip = L.tooltip({ className: 'tooltip-clpe', permanent: false, direction: 'top', offset: [0, -10] });
 
-/* ══════════════════════════════════════════════════════
-   EXTRACT INSEE CODE  (robuste, multi-champs WFS)
-══════════════════════════════════════════════════════ */
-function extractInsee(props) {
-  if (!props) return '';
-  // Champs connus d'ADMINEXPRESS-COG-CARTO
-  const raw =
-    props.INSEE_COM       ||   // champ standard commune
-    props.insee_com       ||   // variante minuscule
-    props.CODE_INSEE      ||
-    props.code_insee      ||
-    props.CODE            ||
-    props.code            ||
-    props.ID              ||   // ex: "COMMUNE_01001" → on extrait les 5 derniers chiffres
-    '';
-  const str = String(raw).trim();
-  // Si c'est un identifiant style "COMMUNE_01001", extraire la partie numérique finale
-  const m = str.match(/(\d{5})$/);
-  if (m) return m[1];
-  // Sinon padStart classique
-  return str.replace(/\D/g, '').padStart(5, '0').slice(-5);
-}
+function buildLayers() {
 
-/* ══════════════════════════════════════════════════════
-   CSV LOADER
-══════════════════════════════════════════════════════ */
-async function loadCSV() {
-  setStep('Chargement des données CLPE…', 2);
-  const response = await fetch(CLPE_CSV_URL);
-  if (!response.ok) throw new Error(`CSV CLPE → HTTP ${response.status}`);
+  // Communes — canvas, very subtle background
+  const comLayer = L.geoJSON(COM_DATA, {
+    renderer: L.canvas({ tolerance: 1 }),
+    style: { weight: 0.2, color: 'rgba(100,160,210,0.1)', fill: false }
+  }).addTo(map);
 
-  // FIX : suppression du BOM UTF-8 (\uFEFF) éventuel avant parsing
-  const csvText = (await response.text()).replace(/^\uFEFF/, '');
-
-  const parsed = Papa.parse(csvText, {
-    header: true,
-    delimiter: ';',
-    skipEmptyLines: true,
+  map.on('zoomend', function() {
+    const z = map.getZoom();
+    const opacity = z >= 9 ? 0.28 : z >= 7 ? 0.14 : 0.06;
+    comLayer.setStyle({ color: `rgba(100,160,210,${opacity})`, weight: z >= 9 ? 0.4 : 0.2 });
   });
 
-  if (parsed.errors?.length) {
-    const firstError = parsed.errors[0];
-    throw new Error(`CSV CLPE invalide (${firstError.message})`);
-  }
-
-  // DEBUG : affiche les colonnes détectées et les premières lignes
-  console.info('[CSV] colonnes détectées :', parsed.meta.fields);
-  console.info('[CSV] 3 premières lignes :', parsed.data.slice(0, 3));
-
-  const data = {};
-  for (const row of parsed.data) {
-    // Normalise la clé de colonne (résistant au BOM résiduel ou espace)
-    const inseeRaw = row['INSEE_COM'] ?? row['\uFEFFINSEE_COM'] ?? row['insee_com'] ?? '';
-    const clpeRaw  = row['CLPE']      ?? row['clpe']            ?? '';
-    const insee    = String(inseeRaw).trim().padStart(5, '0');
-    const clpe     = String(clpeRaw).trim();
-    if (!insee || !clpe || insee === '00000') continue;
-    data[insee] = clpe;
-  }
-
-  console.info(`[CSV] ${Object.keys(data).length} entrées chargées depuis ${CLPE_CSV_URL}.`);
-  if (Object.keys(data).length === 0) {
-    console.error('[CSV] ⚠️ Mapping vide ! Vérifiez les noms de colonnes ci-dessus.');
-  }
-  return data;
-}
-
-/* ══════════════════════════════════════════════════════
-   BUILD FULL INSEE→CLPE MAPPING
-   (propagate from parent commune to associated communes)
-══════════════════════════════════════════════════════ */
-function buildFullMapping(csvMap, assocFeats) {
-  const full = { ...csvMap };
-  assocFeats.forEach(f => {
-    const p = f.properties || {};
-    const code   = extractInsee(p) ||
-                   String(p.INSEE_COM || p.code || '').trim().padStart(5, '0');
-    const parent = String(p.INSEE_COM_RATTACHEMENT || '').trim().padStart(5, '0');
-    if (code && !full[code] && parent && full[parent]) {
-      full[code] = full[parent];
-    }
-  });
-  console.info(`[CSV] mapping étendu : ${Object.keys(full).length} entrées (dont communes assoc.)`);
-  return full;
-}
-
-/* ══════════════════════════════════════════════════════
-   GEOMETRY SANITIZER
-   (remove null geoms, flatten GeometryCollections)
-══════════════════════════════════════════════════════ */
-function sanitizeFeats(feats) {
-  return feats.filter(f => f.geometry).map(f => {
-    const g = f.geometry;
-    if (g.type === 'GeometryCollection') {
-      const polys = (g.geometries || [])
-        .filter(x => x.type === 'Polygon' || x.type === 'MultiPolygon')
-        .flatMap(x => x.type === 'MultiPolygon' ? x.coordinates : [x.coordinates]);
-      return { ...f, geometry: { type: 'MultiPolygon', coordinates: polys } };
-    }
-    return f;
-  }).filter(f => f.geometry.coordinates && f.geometry.coordinates.length);
-}
-
-/* ══════════════════════════════════════════════════════
-   DISSOLVE BY CLPE  (turf.union commune par commune)
-══════════════════════════════════════════════════════ */
-async function dissolveByClpe(commFeats, mapping) {
-  setStep('Attribution des CLPE aux communes…', 66);
-
-  // DEBUG : affiche les propriétés de la 1ère commune WFS
-  if (commFeats.length > 0) {
-    console.info('[WFS] exemple propriétés commune :', commFeats[0].properties);
-    console.info('[WFS] total communes chargées    :', commFeats.length);
-  } else {
-    console.error('[WFS] ⚠️ Aucune commune reçue du WFS !');
-  }
-
-  // Grouper les communes par CLPE
-  const groups = {};
-  let assigned = 0;
-  let unmatched = 0;
-  for (const f of commFeats) {
-    if (!f.geometry) continue;
-    // FIX : extraction robuste du code INSEE (multi-champs)
-    const code = extractInsee(f.properties);
-    const clpe = mapping[code] || null;
-    if (!clpe) { unmatched++; continue; }
-    if (!groups[clpe]) groups[clpe] = [];
-    groups[clpe].push({ type: 'Feature', geometry: f.geometry, properties: {} });
-    assigned++;
-  }
-
-  const clpeNames = Object.keys(groups);
-  console.info(`[CLPE] ${assigned} communes assignées → ${clpeNames.length} CLPE (${unmatched} non trouvées dans CSV)`);
-
-  if (assigned === 0) {
-    // Affiche des exemples de codes WFS vs CSV pour diagnostiquer
-    const sampleWFS = commFeats.slice(0, 5).map(f => extractInsee(f.properties));
-    const sampleCSV = Object.keys(mapping).slice(0, 5);
-    console.error('[CLPE] ⚠️ 0 communes assignées !');
-    console.error('[CLPE]   Codes WFS  (exemples) :', sampleWFS);
-    console.error('[CLPE]   Codes CSV  (exemples) :', sampleCSV);
-  }
-
-  setStep(`Fusion de ${assigned} communes en ${clpeNames.length} CLPE…`, 68);
-  await new Promise(r => setTimeout(r, 0));
-
-  const features = [];
-
-  for (let i = 0; i < clpeNames.length; i++) {
-    const clpe = clpeNames[i];
-    const comms = groups[clpe];
-
-    if (i % 5 === 0) {
-      setStep(`Fusion CLPE ${i + 1} / ${clpeNames.length}…`, 68 + (i / clpeNames.length) * 17);
-      await new Promise(r => setTimeout(r, 0));
-    }
-
-    try {
-      let merged = comms[0];
-      for (let j = 1; j < comms.length; j++) {
-        try { merged = turf.union(merged, comms[j]); } catch(_) {}
-      }
-      merged.properties = { _clpe: clpe };
-      features.push(merged);
-    } catch(e) {
-      console.warn(`[dissolve] Erreur sur CLPE "${clpe}":`, e.message);
-    }
-  }
-
-  console.info(`[CLPE] ${features.length} polygones CLPE créés`);
-  return { type: 'FeatureCollection', features };
-}
-
-/* ══════════════════════════════════════════════════════
-   ADJACENCY  (bbox overlap entre polygones CLPE dissous)
-══════════════════════════════════════════════════════ */
-function buildAdjacency(clpeFC) {
-  setStep('Calcul du graphe d\'adjacence…', 86);
-  const feats  = clpeFC.features;
-  const bboxes = feats.map(f => { try { return turf.bbox(f); } catch(_) { return null; } });
-  const adj    = {};
-  feats.forEach(f => { adj[f.properties._clpe] = []; });
-
-  for (let i = 0; i < feats.length; i++) {
-    if (!bboxes[i]) continue;
-    for (let j = i + 1; j < feats.length; j++) {
-      if (!bboxes[j]) continue;
-      const [ax1,ay1,ax2,ay2] = bboxes[i];
-      const [bx1,by1,bx2,by2] = bboxes[j];
-      if (ax2 < bx1 || bx2 < ax1 || ay2 < by1 || by2 < ay1) continue;
-      const a = feats[i].properties._clpe;
-      const b = feats[j].properties._clpe;
-      adj[a].push(b);
-      adj[b].push(a);
-    }
-  }
-  return adj;
-}
-
-/* ══════════════════════════════════════════════════════
-   GREEDY GRAPH COLORING
-══════════════════════════════════════════════════════ */
-function greedyColor(adj) {
-  const n = CFG.blues.length;
-  const colors = {};
-  const clpes = Object.keys(adj).sort((a, b) => adj[b].length - adj[a].length);
-  for (const clpe of clpes) {
-    const used = new Set((adj[clpe] || []).map(nb => colors[nb]).filter(c => c !== undefined));
-    for (let c = 0; c < n; c++) {
-      if (!used.has(c)) { colors[clpe] = c; break; }
-    }
-    if (colors[clpe] === undefined) colors[clpe] = 0;
-  }
-  return colors;
-}
-
-/* ══════════════════════════════════════════════════════
-   TILE LAYER FACTORY
-══════════════════════════════════════════════════════ */
-function makeTile() {
-  return L.tileLayer(CFG.wmts, {
-    attribution: '© <a href="https://www.ign.fr">IGN</a> – Géoportail',
-    maxZoom: 19, tileSize: 256,
-  });
-}
-
-/* ══════════════════════════════════════════════════════
-   LABEL MARKER
-══════════════════════════════════════════════════════ */
-function labelMarker(lat, lng, text, cls) {
-  return L.marker([lat, lng], {
-    icon: L.divIcon({ html: `<span class="${cls}">${text}</span>`,
-                      className: 'lbl-marker', iconAnchor: [0, 0] }),
-    interactive: false,
-  });
-}
-
-/* ══════════════════════════════════════════════════════
-   LAYER TOGGLE LOGIC
-══════════════════════════════════════════════════════ */
-const LAYERS = {};   // clpe, dept, region, regionLabels, deptLabels
-let mainMap;
-
-function toggleLayer(name) {
-  const btn = document.getElementById('btn-' + name);
-  if (!mainMap) return;
-
-  if (name === 'labels') {
-    const on = btn.classList.toggle('active');
-    ['regionLabels', 'deptLabels'].forEach(k => {
-      if (LAYERS[k]) {
-        if (on) mainMap.addLayer(LAYERS[k]);
-        else    mainMap.removeLayer(LAYERS[k]);
-      }
-    });
-    return;
-  }
-
-  const layer = LAYERS[name];
-  if (!layer) return;
-  if (mainMap.hasLayer(layer)) { mainMap.removeLayer(layer); btn.classList.remove('active'); }
-  else                         { mainMap.addLayer(layer);    btn.classList.add('active');    }
-}
-
-/* ══════════════════════════════════════════════════════
-   COMMUNE LAYER (show only at high zoom)
-══════════════════════════════════════════════════════ */
-let commLayerAdded = false;
-function updateCommLayer(map, commFC) {
-  if (map.getZoom() >= 10) {
-    if (!commLayerAdded) {
-      LAYERS.commune = L.geoJSON(commFC, {
-        style: { fill: false, color: '#cbd5e1', weight: 0.4, opacity: 0.55 },
-      }).addTo(map);
-      LAYERS.commune.bringToBack();
-      commLayerAdded = true;
-    }
-  } else {
-    if (commLayerAdded && LAYERS.commune) {
-      map.removeLayer(LAYERS.commune); LAYERS.commune = null; commLayerAdded = false;
-    }
-  }
-}
-
-/* ══════════════════════════════════════════════════════
-   DEPT LABELS (show at zoom ≥ 8)
-══════════════════════════════════════════════════════ */
-function updateDeptLabels(map) {
-  const show = map.getZoom() >= 8;
-  if (show && LAYERS.deptLabels && !map.hasLayer(LAYERS.deptLabels)) {
-    map.addLayer(LAYERS.deptLabels);
-  } else if (!show && LAYERS.deptLabels && map.hasLayer(LAYERS.deptLabels)) {
-    map.removeLayer(LAYERS.deptLabels);
-  }
-}
-
-/* ══════════════════════════════════════════════════════
-   ADD LAYERS TO A MAP (main or inset)
-══════════════════════════════════════════════════════ */
-function addLayers(map, clpeFC, deptFC, regionFC, colorMap, opts = {}) {
-  const { isInset = false } = opts;
-
-  // ── CLPE filled polygons ──
-  const clpeGJ = L.geoJSON(clpeFC, {
-    style: f => {
-      const ci = colorMap[f.properties._clpe] ?? 0;
-      return {
-        fillColor  : CFG.blues[ci],
-        fillOpacity: 0.55,
-        color      : CFG.blueStroke[ci],
-        weight     : isInset ? 0.8 : 1.2,
-        opacity    : 0.85,
-      };
+  // CLPE
+  const clpeLayer = L.geoJSON(CLPE_DATA, {
+    renderer: L.canvas({ tolerance: 2 }),
+    style: function(feat) {
+      const c = feat.properties.color_idx || 0;
+      return { weight: 0.8, color: 'rgba(20,60,110,0.5)', fillColor: clpeColor(c), fillOpacity: 0.72 };
     },
-    onEachFeature: isInset ? undefined : (f, layer) => {
-      layer.bindTooltip(f.properties._clpe, { className: 'tt-clpe', sticky: true, offset:[8,0] });
-      layer.on({
-        mouseover: e => { e.target.setStyle({ fillOpacity: 0.82, weight: 2.2 }); e.target.bringToFront(); },
-        mouseout : e => { clpeGJ.resetStyle(e.target); },
+    onEachFeature: function(feat, layer) {
+      layer.on('mouseover', function(e) {
+        layer.setStyle({ weight: 2.5, color: '#7ec8f4', fillOpacity: 0.88 });
+        tooltip.setLatLng(e.latlng)
+          .setContent('<strong style="font-size:0.82rem;">' + feat.properties.CLPE + '</strong>')
+          .addTo(map);
       });
-    },
+      layer.on('mousemove', function(e) { tooltip.setLatLng(e.latlng); });
+      layer.on('mouseout', function() {
+        clpeLayer.resetStyle(layer);
+        map.removeLayer(tooltip);
+      });
+      layer.on('click', function() { zoomToBbox(feat.properties.bbox); });
+    }
+  }).addTo(map);
+
+  // Départements
+  L.geoJSON(DEP_DATA, {
+    style: { weight: 1.5, color: '#e8a030', fill: false }
+  }).addTo(map);
+
+  // Régions
+  L.geoJSON(REG_DATA, {
+    style: { weight: 2.8, color: '#e8c040', fill: false }
+  }).addTo(map);
+
+  // Labels
+  buildLabels();
+}
+
+// ─── Labels dynamiques ────────────────────────────────────────────────────
+let regLabelGroup, depLabelGroup;
+
+function buildLabels() {
+  const makeIcon = (html) => L.divIcon({ className: '', html, iconAnchor: [0, 0] });
+
+  // Région labels
+  const regMarkers = REG_DATA.features.map(feat => {
+    const b = feat.properties.bbox;
+    const cx = (b[0]+b[2])/2, cy = (b[1]+b[3])/2;
+    return L.marker([cy, cx], {
+      icon: makeIcon(`<div style="font-size:0.88rem;color:#ffe070;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none;">${feat.properties.nom_officiel}</div>`),
+      interactive: false
+    });
   });
-  if (!isInset) {
-    LAYERS.clpe = clpeGJ;
-    clpeGJ.addTo(map);
+
+  // Département labels
+  const depMarkers = DEP_DATA.features.map(feat => {
+    const b = feat.properties.bbox;
+    const cx = (b[0]+b[2])/2, cy = (b[1]+b[3])/2;
+    return L.marker([cy, cx], {
+      icon: makeIcon(`<div style="font-size:0.62rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none;">${feat.properties.nom_officiel}</div>`),
+      interactive: false
+    });
+  });
+
+  regLabelGroup = L.layerGroup(regMarkers);
+  depLabelGroup = L.layerGroup(depMarkers);
+
+  map.on('zoomend', updateLabels);
+  updateLabels();
+}
+
+function updateLabels() {
+  const z = map.getZoom();
+  // Régions : visibles aux zooms faibles (vue nationale)
+  if (z <= 7) { if (!map.hasLayer(regLabelGroup)) regLabelGroup.addTo(map); }
+  else         { if (map.hasLayer(regLabelGroup)) map.removeLayer(regLabelGroup); }
+  // Départements : visibles à partir du zoom 8
+  if (z >= 7.5) { if (!map.hasLayer(depLabelGroup)) depLabelGroup.addTo(map); }
+  else           { if (map.hasLayer(depLabelGroup)) map.removeLayer(depLabelGroup); }
+}
+
+// ─── Dropdowns ────────────────────────────────────────────────────────────
+function populateDropdowns() {
+  const selReg  = document.getElementById('sel-region');
+  const selDep  = document.getElementById('sel-dep');
+  const selClpe = document.getElementById('sel-clpe');
+
+  REG_DATA.features
+    .map(f => f.properties.nom_officiel).sort()
+    .forEach(name => { const o = new Option(name, name); selReg.add(o); });
+
+  DEP_DATA.features
+    .map(f => f.properties.nom_officiel).sort()
+    .forEach(name => { const o = new Option(name, name); selDep.add(o); });
+
+  [...new Set(CLPE_DATA.features.map(f => f.properties.CLPE))].sort()
+    .forEach(name => { const o = new Option(name, name); selClpe.add(o); });
+}
+
+// ─── Zoom helpers ─────────────────────────────────────────────────────────
+function zoomToBbox(bbox) {
+  map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], { padding: [45, 45], maxZoom: 12 });
+}
+
+function zoomToSelection(type) {
+  const selReg  = document.getElementById('sel-region');
+  const selDep  = document.getElementById('sel-dep');
+  const selClpe = document.getElementById('sel-clpe');
+  let feat;
+  if (type === 'region') {
+    const v = selReg.value; if (!v) return;
+    selDep.value = ''; selClpe.value = '';
+    feat = REG_DATA.features.find(f => f.properties.nom_officiel === v);
+  } else if (type === 'dep') {
+    const v = selDep.value; if (!v) return;
+    selReg.value = ''; selClpe.value = '';
+    feat = DEP_DATA.features.find(f => f.properties.nom_officiel === v);
   } else {
-    clpeGJ.addTo(map);
+    const v = selClpe.value; if (!v) return;
+    selReg.value = ''; selDep.value = '';
+    feat = CLPE_DATA.features.find(f => f.properties.CLPE === v);
   }
-
-  // ── Department boundaries ──
-  const deptGJ = L.geoJSON(deptFC, {
-    style: { fill: false, color: '#64748b', weight: isInset ? 1 : 1.5, opacity: 0.75 },
-  });
-  if (!isInset) { LAYERS.dept = deptGJ; deptGJ.addTo(map); }
-  else deptGJ.addTo(map);
-
-  // ── Region boundaries ──
-  if (!isInset) {
-    const regionGJ = L.geoJSON(regionFC, {
-      style: { fill: false, color: '#1e3a8a', weight: 2.5, opacity: 0.9 },
-    });
-    LAYERS.region = regionGJ;
-    regionGJ.addTo(map);
-  }
+  if (feat) zoomToBbox(feat.properties.bbox);
 }
 
-/* ══════════════════════════════════════════════════════
-   DOM INSET MAPS
-══════════════════════════════════════════════════════ */
-function setupInsetMaps(clpeFC, deptFC, colorMap) {
-  for (const dom of CFG.dom) {
-    const el = document.getElementById('map-' + dom.id);
-    if (!el) continue;
-
-    const inset = L.map(el, {
-      zoomControl: false, attributionControl: false,
-      dragging: false, scrollWheelZoom: false,
-      doubleClickZoom: false, boxZoom: false, keyboard: false,
-      tap: false,
-    });
-    inset.fitBounds(dom.bounds);
-    makeTile().addTo(inset);
-
-    // Filter CLPE features by dept bbox
-    const [[minLat, minLng], [maxLat, maxLng]] = dom.bounds;
-    const domCLPE = {
-      type: 'FeatureCollection',
-      features: clpeFC.features.filter(f => {
-        try {
-          const bb = turf.bbox(f); // [minLng,minLat,maxLng,maxLat]
-          return bb[0] < maxLng + 0.5 && bb[2] > minLng - 0.5 &&
-                 bb[1] < maxLat + 0.5 && bb[3] > minLat - 0.5;
-        } catch(_) { return false; }
-      }),
-    };
-
-    const domDepts = {
-      type: 'FeatureCollection',
-      features: deptFC.features.filter(f => {
-        const code = String(f.properties?.INSEE_DEP || f.properties?.code || '');
-        return code === dom.id;
-      }),
-    };
-
-    addLayers(inset, domCLPE, domDepts, null, colorMap, { isInset: true });
-  }
+function resetView() {
+  document.getElementById('sel-region').value = '';
+  document.getElementById('sel-dep').value    = '';
+  document.getElementById('sel-clpe').value   = '';
+  map.setView([46.5, 2.5], 6);
 }
 
-/* ══════════════════════════════════════════════════════
-   LABELS
-══════════════════════════════════════════════════════ */
-function buildLabels(regionFeats, deptFeats) {
-  // Region labels (always visible after zoom)
-  const regionGrp = L.layerGroup();
-  regionFeats.forEach(f => {
-    try {
-      const c = turf.centerOfMass(f);
-      const [lng, lat] = c.geometry.coordinates;
-      const nom = f.properties.NOM || f.properties.NOM_M || '';
-      regionGrp.addLayer(labelMarker(lat, lng, nom, 'lbl-region'));
-    } catch(_) {}
-  });
-  LAYERS.regionLabels = regionGrp;
-
-  // Dept labels (visible at zoom ≥ 8)
-  const deptGrp = L.layerGroup();
-  deptFeats.forEach(f => {
-    try {
-      const c = turf.centerOfMass(f);
-      const [lng, lat] = c.geometry.coordinates;
-      const nom = f.properties.NOM || f.properties.NOM_M || '';
-      deptGrp.addLayer(labelMarker(lat, lng, nom, 'lbl-dept'));
-    } catch(_) {}
-  });
-  LAYERS.deptLabels = deptGrp;
-}
-
-/* ══════════════════════════════════════════════════════
-   MAIN ORCHESTRATION
-══════════════════════════════════════════════════════ */
-async function main() {
-  // ── 1. Map init ──
-  mainMap = L.map('map', { center: [46.6, 2.5], zoom: 6 });
-  makeTile().addTo(mainMap);
-
-  // ── 2. Load CSV ──
-  const csvMap = await loadCSV();
-
-  // ── 3. Load geodata ──
-  const regionFeats = await fetchAllWFS(CFG.layers.region, 'Chargement des régions',       6,  10);
-  const deptFeats   = await fetchAllWFS(CFG.layers.dept,   'Chargement des départements',  10,  16);
-  const commFeats   = await fetchAllWFS(CFG.layers.commune,'Chargement des communes',       16,  55);
-  const assocFeats  = await fetchAllWFS(CFG.layers.assoc,  'Chargement des communes associées/déléguées', 55, 65);
-
-  // ── 4. Build mapping (CSV + propagation communes associées) ──
-  // FIX : buildFullMapping était défini mais jamais appelé
-  setStep('Construction du mapping INSEE → CLPE…', 66);
-  await new Promise(r => setTimeout(r, 0));
-  const fullMapping = buildFullMapping(csvMap, assocFeats);
-
-  // ── 5. Dissolve ──
-  const clpeFC = await dissolveByClpe(commFeats, fullMapping);
-
-  // ── 6. Adjacency (bbox-based sur polygones CLPE) ──
-  const adj = buildAdjacency(clpeFC);
-  setStep('Coloriage du graphe…', 87);
-  await new Promise(r => setTimeout(r, 0));
-
-  // ── 7. Graph coloring ──
-  const colorIdxMap = greedyColor(adj);
-  const colorMap = {};
-  for (const [clpe, idx] of Object.entries(colorIdxMap)) colorMap[clpe] = idx;
-  clpeFC.features.forEach(f => {
-    f.properties._ci = colorMap[f.properties._clpe] ?? 0;
-  });
-
-  // ── 8. Build GeoJSON collections ──
-  const regionFC = { type: 'FeatureCollection', features: regionFeats };
-  const deptFC   = { type: 'FeatureCollection', features: deptFeats };
-  const commFC   = { type: 'FeatureCollection', features: commFeats };
-
-  // ── 9. Add layers to main map ──
-  setStep('Affichage de la carte…', 90);
-  await new Promise(r => setTimeout(r, 0));
-  addLayers(mainMap, clpeFC, deptFC, regionFC, colorMap);
-
-  // ── 10. Labels ──
-  buildLabels(regionFeats, deptFeats);
-  mainMap.addLayer(LAYERS.regionLabels);
-  // deptLabels added conditionally by zoom
-
-  // ── 11. Commune layer (zoom-dependent) ──
-  mainMap.on('zoomend', () => {
-    updateCommLayer(mainMap, commFC);
-    updateDeptLabels(mainMap);
-  });
-  updateDeptLabels(mainMap);
-
-  // ── 12. DOM insets ──
-  setStep('Construction des encarts DOM…', 95);
-  await new Promise(r => setTimeout(r, 0));
-  setupInsetMaps(clpeFC, deptFC, colorMap);
-
-  // ── 13. Stats ──
-  document.getElementById('stat-clpe').textContent  = clpeFC.features.length.toLocaleString('fr');
-  document.getElementById('stat-comm').textContent  = commFeats.length.toLocaleString('fr');
-  document.getElementById('stat-assoc').textContent = assocFeats.length.toLocaleString('fr');
-
-  console.info(`[CLPE] ${clpeFC.features.length} polygones, ${commFeats.length} communes, ` +
-               `${assocFeats.length} communes assoc.`);
-
-  setStep('✅ Carte prête !', 100);
-  await new Promise(r => setTimeout(r, 500));
-  hideOverlay();
-}
-
-/* ══════════════════════════════════════════════════════
-   BOOT
-══════════════════════════════════════════════════════ */
-main().catch(err => {
-  console.error('[CLPE] Erreur fatale :', err);
-  document.getElementById('ov-step').textContent   = '❌ ' + err.message;
-  document.getElementById('ov-step').style.color   = '#fca5a5';
-  document.getElementById('ov-bar').style.background = '#ef4444';
+// ─── Start ────────────────────────────────────────────────────────────────
+loadAll().catch(err => {
+  status.textContent = 'Erreur de chargement : ' + err.message;
+  bar.style.background = '#c0392b';
 });
 </script>
 </body>
