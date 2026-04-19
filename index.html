@@ -274,39 +274,63 @@ let regToDeps={},depToClpes={},depToRegName={};
 let depCodeToName={},regCodeToName={};
 let COM_CENTROIDS=[];
 let comByClpe={},comByDep={},comByReg={};
+let comNameToInfo={};
 
 function buildLookups(){
   DEP_DATA.features.forEach(f=>{depCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
   REG_DATA.features.forEach(f=>{regCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
 }
 function buildComLists(){
-  comByClpe={};comByDep={};comByReg={};
+  comByClpe={};comByDep={};comByReg={};comNameToInfo={};
   COM_DATA.features.forEach(f=>{
     const p=f.properties;
     const depName=depCodeToName[p.dep]||p.dep||'';
     const regName=regCodeToName[p.reg]||p.reg||'';
     const clpeName=p.clpe||'';
+    comNameToInfo[p.nom]={dep:depName,reg:regName};
     const rec={code:p.code,nom:p.nom,clpe:clpeName,dep:depName,reg:regName};
     if(clpeName){if(!comByClpe[clpeName])comByClpe[clpeName]=[];comByClpe[clpeName].push(rec);}
     if(depName) {if(!comByDep[depName]) comByDep[depName]=[];  comByDep[depName].push(rec);}
     if(regName) {if(!comByReg[regName]) comByReg[regName]=[];  comByReg[regName].push(rec);}
   });
 }
+// Centroïde pondéré par l'aire (formule de Shoelace) pour un ring fermé
+function polyAreaCentroid(ring){
+  let A=0,cx=0,cy=0;
+  const n=ring.length-1;
+  for(let i=0;i<n;i++){
+    const x0=ring[i][0],y0=ring[i][1],x1=ring[i+1][0],y1=ring[i+1][1];
+    const c=x0*y1-x1*y0;A+=c;cx+=(x0+x1)*c;cy+=(y0+y1)*c;
+  }
+  A/=2;
+  if(Math.abs(A)<1e-14){
+    let sx=0,sy=0;for(let i=0;i<n;i++){sx+=ring[i][0];sy+=ring[i][1];}
+    return{x:n>0?sx/n:0,y:n>0?sy/n:0,area:0};
+  }
+  return{x:cx/(6*A),y:cy/(6*A),area:Math.abs(A)};
+}
 function buildCentroids(){
   COM_CENTROIDS=[];
   COM_DATA.features.forEach(feat=>{
     const g=feat.geometry;if(!g)return;
-    const ring=g.type==='Polygon'?g.coordinates[0]:(g.coordinates&&g.coordinates[0]?g.coordinates[0][0]:null);
-    if(!ring||ring.length<2)return;
-    let sx=0,sy=0,n=ring.length-1;if(n<1)return;
-    for(let i=0;i<n;i++){sx+=ring[i][0];sy+=ring[i][1];}
-    COM_CENTROIDS.push({name:feat.properties.nom,x:sx/n,y:sy/n});
+    const polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+    let bestArea=0,bestX=0,bestY=0,totalArea=0;
+    polys.forEach(poly=>{
+      const ring=poly[0];if(!ring||ring.length<3)return;
+      const r=polyAreaCentroid(ring);
+      totalArea+=r.area;
+      if(r.area>bestArea){bestArea=r.area;bestX=r.x;bestY=r.y;}
+    });
+    if(polys.length===0)return;
+    COM_CENTROIDS.push({name:feat.properties.nom,x:bestX,y:bestY,area:totalArea});
   });
 }
 function nearestCommune(lng,lat){
   let best=null,bd=Infinity;
   for(const c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
-  return best?best.name:null;
+  if(!best)return null;
+  const info=comNameToInfo[best.name]||{};
+  return{name:best.name,dep:info.dep||'',reg:info.reg||''};
 }
 function buildCascading(){
   const rcn={};
@@ -362,9 +386,12 @@ async function addWorldMask(){
 
 const tooltip=L.tooltip({className:'tooltip-clpe',permanent:false,direction:'top',offset:[0,-10]});
 function ttHTML(p,com){
-  return '<span class="tt-region">📍 '+(p.reg||'—')+'</span>'
-        +'<span class="tt-dep">🏛 '+(p.dep||'—')+'</span>'
-        +(com?'<span class="tt-com">🏘 '+com+'</span>':'')
+  // Région et département déterminés par la commune survolée, pas par le CLPE
+  const reg=com?com.reg:(p.reg||'—');
+  const dep=com?com.dep:(p.dep||'—');
+  return '<span class="tt-region">📍 '+reg+'</span>'
+        +'<span class="tt-dep">🏛 '+dep+'</span>'
+        +(com?'<span class="tt-com">🏘 '+com.name+'</span>':'')
         +'<span class="tt-clpe">🤝 '+(p.CLPE||'—')+'</span>';
 }
 
@@ -702,14 +729,24 @@ async function exportMapPNG(territory){
       });
     }
     if(level==='clpe'){
-      // Étiquettes des communes (positionnées par centroïde)
-      const centMap={};COM_CENTROIDS.forEach(c=>centMap[c.name]={x:c.x,y:c.y});
-      (comByClpe[nav.clpe]||[]).forEach(com=>{
+      // ── Étiquettes des CLPE voisins (visibles dans la vue, hors CLPE courant)
+      CLPE_DATA.features.forEach(f=>{
+        if(f.properties.CLPE===nav.clpe)return;
+        const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
+        tryLabel(ctx,f.properties.CLPE,c.x,c.y,'italic 8px "Segoe UI",Arial,sans-serif','rgba(144,208,248,0.55)',4,placed,null);
+      });
+      // ── Top 10 communes par surface (centroïde pondéré par aire)
+      const centMap={};COM_CENTROIDS.forEach(c=>centMap[c.name]={x:c.x,y:c.y,area:c.area||0});
+      const clpeCommunes=(comByClpe[nav.clpe]||[]).slice();
+      // Trier par aire décroissante pour avoir les 10 communes les plus grandes
+      clpeCommunes.sort((a,b)=>(centMap[b.nom]?centMap[b.nom].area:0)-(centMap[a.nom]?centMap[a.nom].area:0));
+      const top10=clpeCommunes.slice(0,10);
+      top10.forEach(com=>{
         const ctr=centMap[com.nom];if(!ctr)return;
         const pt=map.latLngToContainerPoint(L.latLng(ctr.y,ctr.x));
         const x=pt.x,y=pt.y+HEADER;
         if(!inMap(x,y))return;
-        tryLabel(ctx,com.nom,x,y,'7.5px "Segoe UI",Arial,sans-serif','#c8e8f8',5,placed,90);
+        tryLabel(ctx,com.nom,x,y,'bold 8.5px "Segoe UI",Arial,sans-serif','#e8f4ff',6,placed,null);
       });
     }
 
