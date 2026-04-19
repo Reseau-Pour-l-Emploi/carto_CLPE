@@ -187,7 +187,7 @@ const CLPE_NORMAL=p=>({weight:1.0,color:'rgba(20,60,110,0.5)',fillColor:clpeColo
 const CLPE_HOVER =p=>({weight:2.5,color:'#7ec8f4',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.9});
 // Contours seulement — fill transparent
 const DEP_STYLE={weight:2.0,color:'#e8a030',fill:false};
-const REG_STYLE={weight:3.0,color:'#e879b0',fill:false};  // rose/pink
+const REG_STYLE={weight:1.8,color:'#e879b0',fill:false};  // rose/pink
 
 const REGS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
 const DEPS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon','Val-de-Marne']);
@@ -264,7 +264,7 @@ function updateExportBar(){
   if(nav.region){btnReg.classList.remove('hidden');btnReg.textContent='📍 '+nav.region;}else btnReg.classList.add('hidden');
   if(nav.department){btnDep.classList.remove('hidden');btnDep.textContent='🏛 '+nav.department;}else btnDep.classList.add('hidden');
   nav.clpe?btnClpe.classList.remove('hidden'):btnClpe.classList.add('hidden');
-  (nav.region||nav.department||nav.clpe)?btnPng.classList.remove('hidden'):btnPng.classList.add('hidden');
+  btnPng.classList.remove('hidden'); // toujours visible
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────
@@ -441,21 +441,21 @@ function buildLayers(){
 }
 
 function buildLabels(){
-  // Coupe un nom long en 2 lignes au point de séparation le plus proche du milieu
+  // Coupe en 2 lignes en cherchant la séparation la plus équilibrée (sans couper un mot)
   function wrapLabel(name){
-    if(name.length<=13)return name;
-    const mid=Math.floor(name.length/2);
-    let best=-1,bestDist=Infinity;
-    for(let i=0;i<name.length;i++){
+    const SEP=/[ -]/;
+    if(name.length<=10)return name;
+    const candidates=[];
+    for(let i=1;i<name.length-1;i++){
       if(name[i]===' '||name[i]==='-'){
-        const dist=Math.abs(i-mid);
-        if(dist<bestDist){bestDist=dist;best=i;}
+        const line1=name[i]==='-'?name.slice(0,i+1):name.slice(0,i);
+        const line2=name[i]==='-'?name.slice(i+1):name.slice(i+1);
+        candidates.push({line1,line2,diff:Math.abs(line1.length-line2.length)});
       }
     }
-    if(best===-1)return name;
-    return name[best]==='-'
-      ?name.slice(0,best+1)+'<br>'+name.slice(best+1)
-      :name.slice(0,best)+'<br>'+name.slice(best+1);
+    if(!candidates.length)return name;
+    const best=candidates.reduce((a,b)=>b.diff<a.diff?b:a);
+    return best.line1+'<br>'+best.line2;
   }
   // transform:-50%/-50% centre le div sur le point de l'ancre Leaflet
   const mkiCentered=html=>L.divIcon({className:'',html,iconAnchor:[0,0]});
@@ -587,8 +587,7 @@ function downloadCSV(rows,filename){
 
 // ─── Export PNG ─────────────────────────────────────────────────────────────
 function startPNGExport(){
-  const territory=nav.clpe||nav.department||nav.region;
-  if(!territory){alert('Veuillez sélectionner un territoire avant d\'exporter.');return;}
+  const territory=nav.clpe||nav.department||nav.region||'France';
   exportMapPNG(territory);
 }
 
@@ -726,11 +725,43 @@ async function exportMapPNG(territory){
       const pt=map.latLngToContainerPoint(L.latLng((bbox[1]+bbox[3])/2,(bbox[0]+bbox[2])/2));
       return {x:pt.x,y:pt.y+HEADER};
     };
+    // Découpe équilibrée en 2 lignes pour le canvas (retourne un tableau)
+    function splitLabel(name){
+      if(name.length<=10)return[name];
+      const candidates=[];
+      for(let i=1;i<name.length-1;i++){
+        if(name[i]===' '||name[i]==='-'){
+          const l1=name[i]==='-'?name.slice(0,i+1):name.slice(0,i);
+          const l2=name[i]==='-'?name.slice(i+1):name.slice(i+1);
+          candidates.push({l1,l2,diff:Math.abs(l1.length-l2.length)});
+        }
+      }
+      if(!candidates.length)return[name];
+      const b=candidates.reduce((a,c)=>c.diff<a.diff?c:a);
+      return[b.l1,b.l2];
+    }
+    // Placement multi-ligne centré avec anti-chevauchement
+    function tryLabelLines(ctx,lines,x,y,font,color,shadow,placed){
+      ctx.save();ctx.font=font;
+      const fSz=parseInt(font)||9;
+      const lineH=fSz*1.3;
+      const maxW=Math.max(...lines.map(l=>ctx.measureText(l).width));
+      const totalH=lines.length*lineH;
+      const pad=3;
+      const bx=x-maxW/2-pad,by=y-totalH/2-pad,bw=maxW+pad*2,bh=totalH+pad*2;
+      if(placed&&placed.some(r=>!(bx+bw<r.x||bx>r.x+r.w||by+bh<r.y||by>r.y+r.h))){ctx.restore();return false;}
+      if(placed)placed.push({x:bx,y:by,w:bw,h:bh});
+      ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=shadow||6;
+      ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
+      const startY=y-((lines.length-1)*lineH)/2;
+      lines.forEach((line,i)=>ctx.fillText(line,x,startY+i*lineH));
+      ctx.restore();return true;
+    }
 
     if(level==='national'){
       REG_DATA.features.forEach(f=>{
         const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
-        tryLabel(ctx,f.properties.nom_officiel,c.x,c.y,'bold 11px "Segoe UI",Arial,sans-serif','#f090d0',8,placed,null);
+        tryLabelLines(ctx,splitLabel(f.properties.nom_officiel),c.x,c.y,'bold 11px "Segoe UI",Arial,sans-serif','#f090d0',8,placed);
       });
     }
     if(level==='region'){
@@ -783,12 +814,13 @@ async function exportMapPNG(territory){
     ctx.fillStyle='rgba(6,18,32,0.96)';ctx.fillRect(0,0,TOTAL_W,HEADER);
     ctx.strokeStyle='#1e4060';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,HEADER);ctx.lineTo(TOTAL_W,HEADER);ctx.stroke();
-    const levelLabel={'national':'Vue nationale','region':'Région','department':'Département','clpe':'Comité Local Pour l\'Emploi'}[level];
+    const levelLabel={'national':'Vue nationale — France entière','region':'Région','department':'Département','clpe':'Comité Local Pour l\'Emploi'}[level];
+    const titleText=level==='national'?'Comités Locaux Pour l\'Emploi':territory;
     ctx.save();ctx.shadowColor='#000';ctx.shadowBlur=6;
     ctx.font='bold 15px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#7ec8f4';ctx.textAlign='left';ctx.textBaseline='alphabetic';
-    ctx.fillText(territory,14,24);
+    ctx.fillText(titleText,14,24);
     ctx.font='10px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#4a7a9a';
-    ctx.fillText(levelLabel+' · Comités Locaux Pour l\'Emploi — France',14,42);
+    ctx.fillText(level==='national'?levelLabel:levelLabel+' · Comités Locaux Pour l\'Emploi — France',14,42);
     ctx.restore();
 
     // ── Colonne communes (CLPE uniquement)
