@@ -441,10 +441,29 @@ function buildLayers(){
 }
 
 function buildLabels(){
+  // Coupe un nom long en 2 lignes au point de séparation le plus proche du milieu
+  function wrapLabel(name){
+    if(name.length<=13)return name;
+    const mid=Math.floor(name.length/2);
+    let best=-1,bestDist=Infinity;
+    for(let i=0;i<name.length;i++){
+      if(name[i]===' '||name[i]==='-'){
+        const dist=Math.abs(i-mid);
+        if(dist<bestDist){bestDist=dist;best=i;}
+      }
+    }
+    if(best===-1)return name;
+    return name[best]==='-'
+      ?name.slice(0,best+1)+'<br>'+name.slice(best+1)
+      :name.slice(0,best)+'<br>'+name.slice(best+1);
+  }
+  // transform:-50%/-50% centre le div sur le point de l'ancre Leaflet
+  const mkiCentered=html=>L.divIcon({className:'',html,iconAnchor:[0,0]});
   const mki=html=>L.divIcon({className:'',html,iconAnchor:[0,0]});
   regLabelGroup=L.layerGroup(REG_DATA.features.map(f=>{
     const b=f.properties.bbox;
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mki('<div style="font-size:.84rem;color:#f090d0;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none">'+f.properties.nom_officiel+'</div>'),interactive:false});
+    const label=wrapLabel(f.properties.nom_officiel);
+    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mkiCentered('<div style="transform:translate(-50%,-50%);font-size:.84rem;color:#f090d0;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;pointer-events:none;text-align:center;line-height:1.25">'+label+'</div>'),interactive:false});
   }));
   depLabelGroup=L.layerGroup(DEP_DATA.features.map(f=>{
     const b=f.properties.bbox;
