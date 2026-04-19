@@ -294,6 +294,13 @@ function buildComLists(){
     if(regName) {if(!comByReg[regName]) comByReg[regName]=[];  comByReg[regName].push(rec);}
   });
 }
+// Extrait le code département depuis le code INSEE commune
+// (2 chiffres pour la métropole, 3 pour les DOM commençant par 97)
+function getDepCodeFromInsee(code){
+  if(!code)return'';
+  if(code.startsWith('97'))return code.slice(0,3);
+  return code.slice(0,2);
+}
 // Centroïde pondéré par l'aire (formule de Shoelace) pour un ring fermé
 function polyAreaCentroid(ring){
   let A=0,cx=0,cy=0;
@@ -322,15 +329,18 @@ function buildCentroids(){
       if(r.area>bestArea){bestArea=r.area;bestX=r.x;bestY=r.y;}
     });
     if(polys.length===0)return;
-    COM_CENTROIDS.push({name:feat.properties.nom,x:bestX,y:bestY,area:totalArea});
+    COM_CENTROIDS.push({name:feat.properties.nom,code:feat.properties.code,x:bestX,y:bestY,area:totalArea});
   });
 }
 function nearestCommune(lng,lat){
   let best=null,bd=Infinity;
   for(const c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
   if(!best)return null;
-  const info=comNameToInfo[best.name]||{};
-  return{name:best.name,dep:info.dep||'',reg:info.reg||''};
+  // Département et région dérivés du code INSEE (2 ou 3 premiers chiffres)
+  const depCode=getDepCodeFromInsee(best.code);
+  const depName=depCodeToName[depCode]||'';
+  const regName=depToRegName[depName]||'';
+  return{name:best.name,dep:depName,reg:regName};
 }
 function buildCascading(){
   const rcn={};
