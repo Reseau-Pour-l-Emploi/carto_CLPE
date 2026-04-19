@@ -83,7 +83,8 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 .tooltip-clpe .tt-dep    { display:block; font-size:.69rem; color:#f5b84a !important; }
 .tooltip-clpe .tt-com    { display:block; font-size:.67rem; color:#8ecce8 !important; font-style:italic; }
 .tooltip-clpe .tt-clpe   { display:block; font-size:.83rem; color:#e8f4ff !important; font-weight:700; border-top:1px solid rgba(74,159,212,.25); padding-top:4px; margin-top:3px; }
-#legend { position:absolute; bottom:22px; right:14px; background:rgba(4,12,22,.92); border:1px solid #1a3550; border-radius:9px; padding:10px 14px; font-size:.69rem; z-index:1000; min-width:178px; box-shadow:0 4px 18px rgba(0,0,0,.6); }
+/* Légende à gauche */
+#legend { position:absolute; bottom:22px; left:14px; background:rgba(4,12,22,.92); border:1px solid #1a3550; border-radius:9px; padding:10px 14px; font-size:.69rem; z-index:1000; min-width:160px; box-shadow:0 4px 18px rgba(0,0,0,.6); }
 #legend h3 { color:#7ec8f4; font-size:.71rem; margin-bottom:8px; font-weight:700; letter-spacing:.3px; }
 .leg-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; color:#7090a8; }
 .leg-swatch { width:24px; height:10px; border-radius:3px; flex-shrink:0; }
@@ -177,43 +178,40 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8c040" stroke-width="2.5"/></svg></div>Région</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.8"/></svg></div>Département</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(100,180,240,0.9)" stroke-width="1.3"/></svg></div>Commune</div>
-    <div class="leg-item"><div class="leg-swatch" style="background:#252535;opacity:.8;border:1px solid rgba(80,80,100,.4);"></div>Hors sélection</div>
   </div>
 </div>
 
 <script>
-const PALETTE = ['#1a5276','#1f8cbf','#117a65','#154360','#2980b9','#1abc9c','#0e6251','#2471a3','#148f77','#1a6da0','#0d5073','#239b56'];
-const clpeColor = idx => PALETTE[idx % PALETTE.length];
-const DIM_STYLE = {fillColor:'#252535',fillOpacity:0.35,color:'rgba(80,80,100,0.25)',weight:0.5};
-const DEP_DIM   = {weight:0.8,color:'rgba(180,100,30,0.18)'};
-const DEP_NORM  = {weight:2.0,color:'#e8a030'};
-const REG_DIM   = {weight:0.8,color:'rgba(220,180,30,0.18)'};
-const REG_NORM  = {weight:3.0,color:'#e8c040'};
-const REGS_NO_CLPE = new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
-const DEPS_NO_CLPE = new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon','Val-de-Marne']);
+const PALETTE=['#1a5276','#1f8cbf','#117a65','#154360','#2980b9','#1abc9c','#0e6251','#2471a3','#148f77','#1a6da0','#0d5073','#239b56'];
+const clpeColor=idx=>PALETTE[idx%PALETTE.length];
+const CLPE_NORMAL=p=>({weight:1.0,color:'rgba(20,60,110,0.5)',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.72});
+const CLPE_HOVER =p=>({weight:2.5,color:'#7ec8f4',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.9});
+const DEP_STYLE  ={weight:2.0,color:'#e8a030'};
+const REG_STYLE  ={weight:3.0,color:'#e8c040'};
+const REGS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
+const DEPS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon','Val-de-Marne']);
 
-const bar    = document.getElementById('loading-bar');
-const status = document.getElementById('loading-status');
+const bar=document.getElementById('loading-bar');
+const status=document.getElementById('loading-status');
 function setProgress(pct,msg){bar.style.width=pct+'%';status.textContent=msg;}
 
-const map = L.map('map',{center:[46.5,2.5],zoom:6,preferCanvas:true,zoomSnap:.5,dragging:true,scrollWheelZoom:true,touchZoom:true,doubleClickZoom:false,zoomControl:true});
-
+const map=L.map('map',{center:[46.5,2.5],zoom:6,preferCanvas:true,zoomSnap:.5,dragging:true,scrollWheelZoom:true,touchZoom:true,doubleClickZoom:false,zoomControl:true});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
   attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
   maxZoom:18,opacity:.55,crossOrigin:true
 }).addTo(map);
 
-const comPane  = map.createPane('comPane');  comPane.style.zIndex  = '420';
-const clpePane = map.createPane('clpePane'); clpePane.style.zIndex = '430';
-const depPane  = map.createPane('depPane');  depPane.style.zIndex  = '440';
-const regPane  = map.createPane('regPane');  regPane.style.zIndex  = '450';
-comPane.style.pointerEvents  = 'none';
-clpePane.style.pointerEvents = 'auto';
-depPane.style.pointerEvents  = 'none';
-regPane.style.pointerEvents  = 'none';
+const comPane=map.createPane('comPane');   comPane.style.zIndex='420';
+const clpePane=map.createPane('clpePane'); clpePane.style.zIndex='430';
+const depPane=map.createPane('depPane');   depPane.style.zIndex='440';
+const regPane=map.createPane('regPane');   regPane.style.zIndex='450';
+comPane.style.pointerEvents='none';
+clpePane.style.pointerEvents='auto';
+depPane.style.pointerEvents='none';
+regPane.style.pointerEvents='none';
 
-let navLevel = 'national';
-let nav = {region:null,department:null,clpe:null};
+let navLevel='national';
+let nav={region:null,department:null,clpe:null};
 
 function updateNavBar(){
   document.getElementById('nav-national').classList.toggle('active',navLevel==='national');
@@ -229,9 +227,7 @@ function updateNavBar(){
       nav.department=null;nav.clpe=null;navLevel='region';
       hideExportPanel();updateNavBar();
       repopulateDeps(nav.region);repopulateClpes(nav.region,'');
-      document.getElementById('sel-dep').value='';
-      document.getElementById('sel-clpe').value='';
-      applyDimming('region',nav.region);
+      document.getElementById('sel-dep').value='';document.getElementById('sel-clpe').value='';
       const f=REG_DATA.features.find(f=>f.properties.nom_officiel===nav.region);
       if(f)zoomToBbox(f.properties.bbox);
     };
@@ -247,7 +243,6 @@ function updateNavBar(){
       hideExportPanel();updateNavBar();
       repopulateClpes(nav.region,nav.department);
       document.getElementById('sel-clpe').value='';
-      applyDimming('department',nav.department);
       const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===nav.department);
       if(f)zoomToBbox(f.properties.bbox);
     };
@@ -255,9 +250,7 @@ function updateNavBar(){
   if(nav.clpe){
     show('nav-clpe-sep');show('nav-clpe-node');
     const el=document.getElementById('nav-clpe-node');
-    el.textContent=nav.clpe;
-    el.classList.add('active');
-    el.onclick=null;
+    el.textContent=nav.clpe;el.classList.add('active');el.onclick=null;
   } else {hide('nav-clpe-sep');hide('nav-clpe-node');}
   updateExportBar();
 }
@@ -267,52 +260,13 @@ function updateExportBar(){
   const btnDep=document.getElementById('btn-exp-dep');
   const btnClpe=document.getElementById('btn-exp-clpe');
   const btnPng=document.getElementById('btn-exp-png');
-  if(nav.region){btnReg.classList.remove('hidden');btnReg.textContent='📍 '+nav.region;}else{btnReg.classList.add('hidden');}
-  if(nav.department){btnDep.classList.remove('hidden');btnDep.textContent='🏛 '+nav.department;}else{btnDep.classList.add('hidden');}
+  if(nav.region){btnReg.classList.remove('hidden');btnReg.textContent='📍 '+nav.region;}else btnReg.classList.add('hidden');
+  if(nav.department){btnDep.classList.remove('hidden');btnDep.textContent='🏛 '+nav.department;}else btnDep.classList.add('hidden');
   nav.clpe?btnClpe.classList.remove('hidden'):btnClpe.classList.add('hidden');
   (nav.region||nav.department||nav.clpe)?btnPng.classList.remove('hidden'):btnPng.classList.add('hidden');
 }
 
-function applyDimming(level,selected){
-  if(!clpeLayer)return;
-  clpeLayer.eachLayer(layer=>{
-    const p=layer.feature.properties;
-    let dim=false;
-    if(level==='region')dim=(p.reg!==selected);
-    else if(level==='department')dim=(p.dep!==selected);
-    else if(level==='clpe')dim=(p.CLPE!==selected);
-    if(dim){layer.setStyle(DIM_STYLE);}
-    else{layer.setStyle({fillColor:clpeColor(p.color_idx||0),fillOpacity:0.72,color:'rgba(20,60,110,0.5)',weight:1.0});}
-  });
-  if(depLayer){
-    depLayer.eachLayer(layer=>{
-      const name=layer.feature.properties.nom_officiel;
-      let dim=false;
-      if(level==='region')dim=(depToRegName[name]!==selected);
-      else if(level==='department')dim=(name!==selected);
-      else if(level==='clpe'){const cf=CLPE_DATA.features.find(f=>f.properties.CLPE===selected);dim=cf?(name!==cf.properties.dep):false;}
-      layer.setStyle(dim?DEP_DIM:DEP_NORM);
-    });
-  }
-  if(regLayer){
-    regLayer.eachLayer(layer=>{
-      const name=layer.feature.properties.nom_officiel;
-      let dim=false;
-      if(level==='region')dim=(name!==selected);
-      else if(level==='department')dim=(name!==(depToRegName[selected]||nav.region||''));
-      else if(level==='clpe'){const cf=CLPE_DATA.features.find(f=>f.properties.CLPE===selected);dim=cf?(name!==cf.properties.reg):false;}
-      layer.setStyle(dim?REG_DIM:REG_NORM);
-    });
-  }
-}
-
-function clearDimming(){
-  if(!clpeLayer)return;
-  clpeLayer.eachLayer(layer=>{const p=layer.feature.properties;layer.setStyle({fillColor:clpeColor(p.color_idx||0),fillOpacity:0.72,color:'rgba(20,60,110,0.5)',weight:1.0});});
-  if(depLayer)depLayer.eachLayer(layer=>layer.setStyle(DEP_NORM));
-  if(regLayer)regLayer.eachLayer(layer=>layer.setStyle(REG_NORM));
-}
-
+// ─── Data ──────────────────────────────────────────────────────────────────
 let REG_DATA,DEP_DATA,CLPE_DATA,COM_DATA;
 let allDeps=[],allClpes=[];
 let regToDeps={},depToClpes={},depToRegName={};
@@ -324,7 +278,6 @@ function buildLookups(){
   DEP_DATA.features.forEach(f=>{depCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
   REG_DATA.features.forEach(f=>{regCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
 }
-
 function buildComLists(){
   comByClpe={};comByDep={};comByReg={};
   COM_DATA.features.forEach(f=>{
@@ -334,11 +287,10 @@ function buildComLists(){
     const clpeName=p.clpe||'';
     const rec={code:p.code,nom:p.nom,clpe:clpeName,dep:depName,reg:regName};
     if(clpeName){if(!comByClpe[clpeName])comByClpe[clpeName]=[];comByClpe[clpeName].push(rec);}
-    if(depName) {if(!comByDep[depName])comByDep[depName]=[];comByDep[depName].push(rec);}
-    if(regName) {if(!comByReg[regName])comByReg[regName]=[];comByReg[regName].push(rec);}
+    if(depName) {if(!comByDep[depName]) comByDep[depName]=[];  comByDep[depName].push(rec);}
+    if(regName) {if(!comByReg[regName]) comByReg[regName]=[];  comByReg[regName].push(rec);}
   });
 }
-
 function buildCentroids(){
   COM_CENTROIDS=[];
   COM_DATA.features.forEach(feat=>{
@@ -350,13 +302,11 @@ function buildCentroids(){
     COM_CENTROIDS.push({name:feat.properties.nom,x:sx/n,y:sy/n});
   });
 }
-
 function nearestCommune(lng,lat){
   let best=null,bd=Infinity;
-  for(let c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
+  for(const c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
   return best?best.name:null;
 }
-
 function buildCascading(){
   const rcn={};
   REG_DATA.features.forEach(f=>rcn[f.properties.code_insee]=f.properties.nom_officiel);
@@ -420,14 +370,6 @@ function ttHTML(p,com){
 let clpeLayer,depLayer,regLayer,comLayer;
 let regLabelGroup,depLabelGroup,clpeLabelGroup;
 
-function isDimmedLayer(p){
-  if(navLevel==='national')return false;
-  if(navLevel==='region')return p.reg!==nav.region;
-  if(navLevel==='department')return p.dep!==nav.department;
-  if(navLevel==='clpe')return p.CLPE!==nav.clpe;
-  return false;
-}
-
 function buildLayers(){
   const comCanvas=L.canvas({pane:'comPane',tolerance:1});
   comLayer=L.geoJSON(COM_DATA,{renderer:comCanvas,pane:'comPane',style:{weight:1.3,color:'rgba(100,180,240,0.55)',fill:false},interactive:false}).addTo(map);
@@ -441,18 +383,15 @@ function buildLayers(){
   const clpeCanvas=L.canvas({pane:'clpePane',tolerance:2});
   clpeLayer=L.geoJSON(CLPE_DATA,{
     renderer:clpeCanvas,pane:'clpePane',
-    style:feat=>({weight:1.0,color:'rgba(20,60,110,0.5)',fillColor:clpeColor(feat.properties.color_idx||0),fillOpacity:0.72}),
+    style:feat=>CLPE_NORMAL(feat.properties),
     onEachFeature(feat,layer){
       const p=feat.properties;
       layer.on('mouseover',e=>{
-        layer.setStyle({weight:2.5,color:'#7ec8f4',fillOpacity:.9});
+        layer.setStyle(CLPE_HOVER(p));
         tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat))).addTo(map);
       });
       layer.on('mousemove',e=>{tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat)));});
-      layer.on('mouseout',()=>{
-        layer.setStyle(isDimmedLayer(p)?DIM_STYLE:{fillColor:clpeColor(p.color_idx||0),fillOpacity:0.72,color:'rgba(20,60,110,0.5)',weight:1.0});
-        map.removeLayer(tooltip);
-      });
+      layer.on('mouseout',()=>{layer.setStyle(CLPE_NORMAL(p));map.removeLayer(tooltip);});
       layer.on('click',()=>{
         nav.clpe=p.CLPE;nav.department=p.dep;nav.region=p.reg;navLevel='clpe';
         document.getElementById('sel-region').value=nav.region||'';
@@ -460,14 +399,13 @@ function buildLayers(){
         document.getElementById('sel-dep').value=nav.department||'';
         repopulateClpes(nav.region,nav.department);
         document.getElementById('sel-clpe').value=p.CLPE;
-        updateNavBar();applyDimming('clpe',p.CLPE);
-        zoomToBbox(p.bbox);showExportPanel(p.CLPE);
+        updateNavBar();zoomToBbox(p.bbox);showExportPanel(p.CLPE);
       });
     }
   }).addTo(map);
 
-  depLayer=L.geoJSON(DEP_DATA,{renderer:L.svg({pane:'depPane'}),pane:'depPane',style:DEP_NORM,interactive:false}).addTo(map);
-  regLayer=L.geoJSON(REG_DATA,{renderer:L.svg({pane:'regPane'}),pane:'regPane',style:REG_NORM,interactive:false}).addTo(map);
+  depLayer=L.geoJSON(DEP_DATA,{renderer:L.svg({pane:'depPane'}),pane:'depPane',style:DEP_STYLE,interactive:false}).addTo(map);
+  regLayer=L.geoJSON(REG_DATA,{renderer:L.svg({pane:'regPane'}),pane:'regPane',style:REG_STYLE,interactive:false}).addTo(map);
   buildLabels();
 }
 
@@ -500,7 +438,6 @@ function populateDropdowns(){
   allDeps.forEach(n=>document.getElementById('sel-dep').add(new Option(n,n)));
   allClpes.forEach(n=>document.getElementById('sel-clpe').add(new Option(n,n)));
 }
-
 function repopulateDeps(regName){
   const sel=document.getElementById('sel-dep'),saved=sel.value;
   sel.innerHTML='<option value="">— Tous les départements —</option>';
@@ -508,14 +445,13 @@ function repopulateDeps(regName){
   list.forEach(n=>sel.add(new Option(n,n)));
   if(list.includes(saved))sel.value=saved;
 }
-
 function repopulateClpes(regName,depName){
   const sel=document.getElementById('sel-clpe'),saved=sel.value;
   sel.innerHTML='<option value="">— Tous les CLPE —</option>';
   let list;
   if(depName){list=(depToClpes[depName]||[]).slice();}
   else if(regName){const seen={};list=[];CLPE_DATA.features.forEach(f=>{if(f.properties.reg===regName&&!seen[f.properties.CLPE]){seen[f.properties.CLPE]=true;list.push(f.properties.CLPE);}});list.sort();}
-  else{list=allClpes;}
+  else list=allClpes;
   list.forEach(n=>sel.add(new Option(n,n)));
   if(list.includes(saved))sel.value=saved;
 }
@@ -524,64 +460,48 @@ function onRegionChange(){
   const rn=document.getElementById('sel-region').value;
   nav.region=rn||null;nav.department=null;nav.clpe=null;
   document.getElementById('sel-dep').value='';document.getElementById('sel-clpe').value='';
-  repopulateDeps(rn);repopulateClpes(rn,'');
-  hideExportPanel();
+  repopulateDeps(rn);repopulateClpes(rn,'');hideExportPanel();
   if(!rn){resetView();return;}
-  navLevel='region';updateNavBar();applyDimming('region',rn);
-  const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);
-  if(f)zoomToBbox(f.properties.bbox);
+  navLevel='region';updateNavBar();
+  const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);
 }
-
 function onDepChange(){
   const rn=document.getElementById('sel-region').value;
   const dn=document.getElementById('sel-dep').value;
   nav.clpe=null;document.getElementById('sel-clpe').value='';
   repopulateClpes(rn,dn);hideExportPanel();
   if(!dn){
-    nav.department=null;nav.region=rn||null;
-    navLevel=rn?'region':'national';
-    updateNavBar();
-    if(rn){applyDimming('region',rn);const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);}
-    else{clearDimming();map.setView([46.5,2.5],6);}
-    return;
+    nav.department=null;nav.region=rn||null;navLevel=rn?'region':'national';updateNavBar();
+    if(rn){const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);}
+    else map.setView([46.5,2.5],6);return;
   }
-  nav.department=dn;nav.region=rn||depToRegName[dn]||null;
-  navLevel='department';updateNavBar();applyDimming('department',dn);
-  const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===dn);
-  if(f)zoomToBbox(f.properties.bbox);
+  nav.department=dn;nav.region=rn||depToRegName[dn]||null;navLevel='department';updateNavBar();
+  const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===dn);if(f)zoomToBbox(f.properties.bbox);
 }
-
 function onClpeChange(){
   const cn=document.getElementById('sel-clpe').value;
   if(!cn){
     nav.clpe=null;
     const dn=document.getElementById('sel-dep').value,rn=document.getElementById('sel-region').value;
-    navLevel=dn?'department':rn?'region':'national';
-    if(navLevel==='department')applyDimming('department',dn);
-    else if(navLevel==='region')applyDimming('region',rn);
-    else clearDimming();
-    hideExportPanel();updateNavBar();return;
+    navLevel=dn?'department':rn?'region':'national';hideExportPanel();updateNavBar();return;
   }
-  const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);
-  if(!feat)return;
+  const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);if(!feat)return;
   const p=feat.properties;
   nav.clpe=cn;nav.department=p.dep;nav.region=p.reg;navLevel='clpe';
   document.getElementById('sel-region').value=nav.region||'';
-  repopulateDeps(nav.region);
-  document.getElementById('sel-dep').value=nav.department||'';
-  repopulateClpes(nav.region,nav.department);
-  document.getElementById('sel-clpe').value=cn;
-  updateNavBar();applyDimming('clpe',cn);
-  zoomToBbox(p.bbox);showExportPanel(cn);
+  repopulateDeps(nav.region);document.getElementById('sel-dep').value=nav.department||'';
+  repopulateClpes(nav.region,nav.department);document.getElementById('sel-clpe').value=cn;
+  updateNavBar();zoomToBbox(p.bbox);showExportPanel(cn);
 }
 
+// ─── Panel export ──────────────────────────────────────────────────────────
 let _communes=[];
 function showExportPanel(clpeName){
   _communes=(comByClpe[clpeName]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
   document.getElementById('export-clpe-title').textContent='🤝 '+clpeName;
   document.getElementById('export-count').textContent=_communes.length+' commune'+(_communes.length>1?'s':'');
-  document.getElementById('export-search').value='';
-  renderList(_communes);document.getElementById('export-panel').classList.add('open');
+  document.getElementById('export-search').value='';renderList(_communes);
+  document.getElementById('export-panel').classList.add('open');
 }
 function openCLPEPanel(){if(nav.clpe)showExportPanel(nav.clpe);}
 function renderList(list){
@@ -617,26 +537,106 @@ function downloadCSV(rows,filename){
   a.download=filename+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
+// ─── Export PNG ────────────────────────────────────────────────────────────
 function startPNGExport(){
   const territory=nav.clpe||nav.department||nav.region;
   if(!territory){alert('Veuillez sélectionner un territoire avant d\'exporter.');return;}
   exportMapPNG(territory);
 }
 
+// Lat/lng → pixel position relative to map container
+function latlngToMapPx(lat,lng){
+  const pt=map.latLngToContainerPoint(L.latLng(lat,lng));
+  return {x:pt.x,y:pt.y};
+}
+
+// Draw a GeoJSON ring on canvas ctx (convert latlng to px)
+function drawRing(ctx,ring){
+  ctx.beginPath();
+  ring.forEach((c,i)=>{
+    const px=latlngToMapPx(c[1],c[0]);
+    i===0?ctx.moveTo(px.x,px.y):ctx.lineTo(px.x,px.y);
+  });
+  ctx.closePath();
+}
+
+// Render a GeoJSON geometry (Polygon|MultiPolygon) as filled/stroked shape on ctx
+function renderGeom(ctx,geom,fillColor,strokeColor,lineWidth){
+  ctx.fillStyle=fillColor||'transparent';
+  ctx.strokeStyle=strokeColor||'transparent';
+  ctx.lineWidth=lineWidth||1;
+  const polys=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
+  polys.forEach(poly=>{
+    ctx.beginPath();
+    poly.forEach(ring=>{
+      ring.forEach((c,i)=>{
+        const px=latlngToMapPx(c[1],c[0]);
+        i===0?ctx.moveTo(px.x,px.y):ctx.lineTo(px.x,px.y);
+      });
+    });
+    ctx.closePath();
+    if(fillColor)ctx.fill('evenodd');
+    if(strokeColor)ctx.stroke();
+  });
+}
+
+// Overlap-free label placement using placed[] list
+function drawLabel(ctx,text,x,y,font,color,shadow,placed,maxW){
+  ctx.font=font;
+  const tw=ctx.measureText(text).width;
+  const fSize=parseInt(font);
+  const pad=4;
+  const rx=x-tw/2-pad,ry=y-fSize-pad,rw=tw+pad*2,rh=fSize+pad*2;
+  // check overlap
+  if(placed&&placed.some(r=>!(rx+rw<r.x||rx>r.x+r.w||ry+rh<r.y||ry>r.y+r.h)))return false;
+  // optional max width constraint
+  if(maxW&&tw>maxW)return false;
+  if(placed)placed.push({x:rx,y:ry,w:rw,h:rh});
+  ctx.shadowColor='#000';ctx.shadowBlur=shadow||6;
+  ctx.fillStyle=color;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,x,y);
+  ctx.shadowBlur=0;
+  return true;
+}
+
 async function exportMapPNG(territory){
   const btn=document.getElementById('btn-exp-png');
   const origText=btn.textContent;btn.textContent='⏳ Génération…';btn.disabled=true;
+
   try{
     const mapEl=document.getElementById('map');
     const canvases=Array.from(mapEl.querySelectorAll('canvas'));
-    const svgs=Array.from(mapEl.querySelectorAll('svg'));
     const rect=mapEl.getBoundingClientRect();
-    const W=rect.width,H=rect.height;
-    const dpr=window.devicePixelRatio||1;
+    const W=Math.round(rect.width),H=Math.round(rect.height);
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const HEADER=52;
+
+    // Determine what labels/borders to draw
+    const level=nav.clpe?'clpe':nav.department?'department':nav.region?'region':'national';
+
+    // Commune list panel (only for CLPE level)
+    const showComList=(level==='clpe');
+    const LIST_COL=240; // px width of right column for commune list
+    const listCommunes=showComList?(comByClpe[nav.clpe]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr')):[];
+
+    const TOTAL_W=showComList?W+LIST_COL:W;
+
+    // Footer height
+    const FOOTER=24;
+    const TOTAL_H=H+HEADER+FOOTER;
+
     const merged=document.createElement('canvas');
-    merged.width=W*dpr;merged.height=H*dpr;
+    merged.width=TOTAL_W*dpr;merged.height=TOTAL_H*dpr;
     const ctx=merged.getContext('2d');ctx.scale(dpr,dpr);
-    ctx.fillStyle='#0c1825';ctx.fillRect(0,0,W,H);
+
+    // ── Background
+    ctx.fillStyle='#0c1825';ctx.fillRect(0,0,TOTAL_W,TOTAL_H);
+
+    // ── Clip to map area (below header)
+    ctx.save();
+    ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
+
     // Tiles
     const imgs=Array.from(mapEl.querySelectorAll('.leaflet-tile-pane img'));
     for(const img of imgs){
@@ -644,46 +644,177 @@ async function exportMapPNG(territory){
       try{
         const r=img.getBoundingClientRect();
         ctx.globalAlpha=parseFloat(img.style.opacity)||0.55;
-        ctx.drawImage(img,r.left-rect.left,r.top-rect.top,r.width,r.height);
+        ctx.drawImage(img,r.left-rect.left,r.top-rect.top+HEADER,r.width,r.height);
       }catch(e){}
     }
     ctx.globalAlpha=1;
-    // SVG layers
+
+    // SVG layers (dep/reg) via serialization
+    const svgs=Array.from(mapEl.querySelectorAll('svg'));
     for(const svg of svgs){
       try{
         const svgRect=svg.getBoundingClientRect();
         const svgStr=new XMLSerializer().serializeToString(svg);
-        const svgBlob=new Blob([svgStr],{type:'image/svg+xml;charset=utf-8'});
-        const url=URL.createObjectURL(svgBlob);
-        await new Promise((res)=>{
+        const url=URL.createObjectURL(new Blob([svgStr],{type:'image/svg+xml;charset=utf-8'}));
+        await new Promise(res=>{
           const img2=new Image();
-          img2.onload=()=>{ctx.drawImage(img2,svgRect.left-rect.left,svgRect.top-rect.top,svgRect.width,svgRect.height);URL.revokeObjectURL(url);res();};
+          img2.onload=()=>{ctx.drawImage(img2,svgRect.left-rect.left,svgRect.top-rect.top+HEADER,svgRect.width,svgRect.height);URL.revokeObjectURL(url);res();};
           img2.onerror=()=>{URL.revokeObjectURL(url);res();};
           img2.src=url;
         });
       }catch(e){}
     }
-    // Vector canvases
+
+    // Vector canvases (CLPE fills + commune borders)
     for(const c of canvases){
-      try{const r=c.getBoundingClientRect();ctx.drawImage(c,r.left-rect.left,r.top-rect.top,r.width,r.height);}catch(e){}
+      try{const r=c.getBoundingClientRect();ctx.drawImage(c,r.left-rect.left,r.top-rect.top+HEADER,r.width,r.height);}catch(e){}
     }
-    // Header
-    const level=nav.clpe?'Comité Local Pour l\'Emploi':nav.department?'Département':'Région';
-    ctx.fillStyle='rgba(8,24,42,0.92)';ctx.fillRect(0,0,W,46);
-    ctx.strokeStyle='#1e4060';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,46);ctx.lineTo(W,46);ctx.stroke();
-    ctx.font='bold 14px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#7ec8f4';ctx.fillText(territory,14,22);
+
+    // ── Now draw vector borders & labels on top (from GeoJSON data)
+    ctx.restore(); // remove clip
+
+    // Helper: bbox center in screen px (with HEADER offset)
+    const bboxCenter=(bbox)=>{
+      const mid=latlngToMapPx((bbox[1]+bbox[3])/2,(bbox[0]+bbox[2])/2);
+      return {x:mid.x,y:mid.y+HEADER};
+    };
+
+    const placed=[];
+
+    if(level==='national'){
+      // Draw region borders + labels
+      ctx.save();ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
+      REG_DATA.features.forEach(f=>{
+        if(!f.geometry)return;
+        renderGeom(ctx,f.geometry,null,'#e8c040',2.5);
+      });
+      ctx.restore();
+      REG_DATA.features.forEach(f=>{
+        const b=f.properties.bbox;
+        if(!b)return;
+        const ctr=bboxCenter(b);
+        if(ctr.x<0||ctr.x>W||ctr.y<HEADER||ctr.y>TOTAL_H-FOOTER)return;
+        drawLabel(ctx,f.properties.nom_officiel,ctr.x,ctr.y,'bold 11px "Segoe UI",Arial,sans-serif','#ffe070',8,placed,null);
+      });
+    }
+
+    if(level==='region'){
+      // Draw dep borders + labels within region
+      const regName=nav.region;
+      ctx.save();ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
+      DEP_DATA.features.forEach(f=>{
+        if(!f.geometry||depToRegName[f.properties.nom_officiel]!==regName)return;
+        renderGeom(ctx,f.geometry,null,'#e8a030',2.0);
+      });
+      ctx.restore();
+      DEP_DATA.features.forEach(f=>{
+        if(depToRegName[f.properties.nom_officiel]!==regName)return;
+        const b=f.properties.bbox;if(!b)return;
+        const ctr=bboxCenter(b);
+        if(ctr.x<0||ctr.x>W||ctr.y<HEADER||ctr.y>TOTAL_H-FOOTER)return;
+        drawLabel(ctx,f.properties.nom_officiel,ctr.x,ctr.y,'bold 10px "Segoe UI",Arial,sans-serif','#f5b84a',7,placed,null);
+      });
+    }
+
+    if(level==='department'){
+      // Draw CLPE borders + labels within dep
+      const depName=nav.department;
+      ctx.save();ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
+      // dep border highlight
+      const depFeat=DEP_DATA.features.find(f=>f.properties.nom_officiel===depName);
+      if(depFeat&&depFeat.geometry)renderGeom(ctx,depFeat.geometry,null,'#e8a030',2.5);
+      ctx.restore();
+      CLPE_DATA.features.forEach(f=>{
+        if(f.properties.dep!==depName)return;
+        const b=f.properties.bbox;if(!b)return;
+        const ctr=bboxCenter(b);
+        if(ctr.x<0||ctr.x>W||ctr.y<HEADER||ctr.y>TOTAL_H-FOOTER)return;
+        drawLabel(ctx,f.properties.CLPE,ctr.x,ctr.y,'bold 9px "Segoe UI",Arial,sans-serif','#90d0f8',6,placed,120);
+      });
+    }
+
+    if(level==='clpe'){
+      // Draw highlighted CLPE border
+      const clpeFeat=CLPE_DATA.features.find(f=>f.properties.CLPE===nav.clpe);
+      ctx.save();ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
+      if(clpeFeat&&clpeFeat.geometry){
+        renderGeom(ctx,clpeFeat.geometry,null,'#7ec8f4',2.5);
+      }
+      ctx.restore();
+
+      // Commune labels (overlap-aware)
+      const clpeCommunes=comByClpe[nav.clpe]||[];
+      // Build a map from commune name to centroid
+      const centroidMap={};
+      COM_CENTROIDS.forEach(c=>centroidMap[c.name]={x:c.x,y:c.y});
+
+      clpeCommunes.forEach(com=>{
+        const ctr=centroidMap[com.nom];if(!ctr)return;
+        const px=latlngToMapPx(ctr.y,ctr.x);
+        const x=px.x,y=px.y+HEADER;
+        if(x<0||x>W||y<HEADER||y>TOTAL_H-FOOTER)return;
+        drawLabel(ctx,com.nom,x,y,'8px "Segoe UI",Arial,sans-serif','#c8e8f8',5,placed,100);
+      });
+    }
+
+    // ── Header
+    ctx.fillStyle='rgba(8,24,42,0.95)';ctx.fillRect(0,0,TOTAL_W,HEADER);
+    ctx.strokeStyle='#1e4060';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,HEADER);ctx.lineTo(TOTAL_W,HEADER);ctx.stroke();
+    const levelLabel=level==='clpe'?'Comité Local Pour l\'Emploi':level==='department'?'Département':level==='region'?'Région':'Vue nationale';
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.font='bold 15px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#7ec8f4';
+    ctx.shadowColor='#000';ctx.shadowBlur=6;
+    ctx.fillText(territory,14,24);ctx.shadowBlur=0;
     ctx.font='10px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#4a7a9a';
-    ctx.fillText(level+' · Comités Locaux Pour l\'Emploi — France',14,40);
-    // Footer
-    ctx.fillStyle='rgba(8,24,42,0.85)';ctx.fillRect(0,H-22,W,22);
-    ctx.font='9px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#2a4d60';
+    ctx.fillText(levelLabel+' · Comités Locaux Pour l\'Emploi — France',14,42);
+
+    // ── Commune list column (CLPE only)
+    if(showComList&&listCommunes.length){
+      ctx.fillStyle='rgba(5,16,28,0.97)';ctx.fillRect(W,0,LIST_COL,TOTAL_H);
+      ctx.strokeStyle='#1e3a50';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(W,0);ctx.lineTo(W,TOTAL_H);ctx.stroke();
+      // Title
+      ctx.fillStyle='#3a6a88';ctx.fillRect(W,HEADER,LIST_COL,1);
+      ctx.font='bold 9px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#5a8aaa';
+      ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText('COMMUNES ('+listCommunes.length+')',W+10,HEADER-10);
+      // List items
+      const lineH=16,startY=HEADER+14,maxLines=Math.floor((H-8)/lineH);
+      const cols=listCommunes.length>maxLines?2:1;
+      const colW=Math.floor(LIST_COL/cols);
+      listCommunes.slice(0,maxLines*cols).forEach((com,i)=>{
+        const col=Math.floor(i/(Math.ceil(listCommunes.length/cols)));
+        const row=i%(Math.ceil(listCommunes.length/cols));
+        const x=W+8+col*colW,y=startY+row*lineH;
+        if(y>TOTAL_H-FOOTER-4)return;
+        ctx.font='7.5px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#3a6a8a';
+        ctx.fillText(com.code,x,y);
+        ctx.fillStyle='#a0c8e8';
+        const maxNomW=colW-44;
+        let nom=com.nom;
+        ctx.font='8px "Segoe UI",Arial,sans-serif';
+        while(ctx.measureText(nom).width>maxNomW&&nom.length>3)nom=nom.slice(0,-1);
+        if(nom!==com.nom)nom=nom.trim()+'…';
+        ctx.fillText(nom,x+36,y);
+      });
+      if(listCommunes.length>maxLines*cols){
+        ctx.font='italic 8px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#2a4d60';
+        ctx.fillText('+'+(listCommunes.length-maxLines*cols)+' autres…',W+8,TOTAL_H-FOOTER-6);
+      }
+    }
+
+    // ── Footer
+    ctx.fillStyle='rgba(5,12,22,0.92)';ctx.fillRect(0,TOTAL_H-FOOTER,TOTAL_W,FOOTER);
+    ctx.strokeStyle='#0e2030';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,TOTAL_H-FOOTER);ctx.lineTo(TOTAL_W,TOTAL_H-FOOTER);ctx.stroke();
+    ctx.font='8px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#2a4d60';ctx.textAlign='left';ctx.textBaseline='middle';
     const dateStr=new Date().toLocaleDateString('fr-FR',{year:'numeric',month:'long',day:'numeric'});
-    ctx.fillText('© OpenStreetMap contributors · CARTO · Export du '+dateStr,10,H-6);
+    ctx.fillText('© OpenStreetMap contributors · CARTO · Export du '+dateStr,10,TOTAL_H-FOOTER/2);
+
     merged.toBlob(blob=>{
       const url=URL.createObjectURL(blob);const a=document.createElement('a');
       a.href=url;a.download='carte_CLPE_'+territory.replace(/[^a-zA-Z0-9\-]/g,'_')+'.png';
       document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
     },'image/png');
+
   }catch(e){console.error('PNG export error:',e);alert('Erreur lors de l\'export PNG : '+e.message);}
   finally{btn.textContent=origText;btn.disabled=false;}
 }
@@ -692,10 +823,8 @@ function zoomToBbox(bbox){map.fitBounds([[bbox[1],bbox[0]],[bbox[3],bbox[2]]],{p
 function resetView(){
   nav={region:null,department:null,clpe:null};navLevel='national';
   document.getElementById('sel-region').value='';document.getElementById('sel-dep').value='';document.getElementById('sel-clpe').value='';
-  repopulateDeps('');repopulateClpes('','');
-  hideExportPanel();clearDimming();updateNavBar();map.setView([46.5,2.5],6);
+  repopulateDeps('');repopulateClpes('','');hideExportPanel();updateNavBar();map.setView([46.5,2.5],6);
 }
-
 loadAll().catch(e=>{status.textContent='Erreur : '+e.message;bar.style.background='#c0392b';console.error(e);});
 </script>
 </body>
