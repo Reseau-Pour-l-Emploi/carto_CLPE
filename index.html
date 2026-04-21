@@ -10,100 +10,172 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',Arial,sans-serif; background:#0f1923; color:#e0e8f0; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
-#header { background:linear-gradient(135deg,#0a2540 0%,#1a3a5c 100%); padding:10px 20px; border-bottom:1px solid #1e4060; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,.5); flex-shrink:0; gap:16px; flex-wrap:wrap; }
+
+/* Header */
+#header {
+  background:linear-gradient(135deg,#0a2540 0%,#1a3a5c 100%);
+  padding:10px 20px; border-bottom:1px solid #1e4060;
+  display:flex; align-items:center; justify-content:space-between;
+  box-shadow:0 2px 12px rgba(0,0,0,.5); flex-shrink:0; gap:16px; flex-wrap:wrap;
+}
 #header-title h1 { font-size:1rem; font-weight:700; color:#7ec8f4; letter-spacing:.3px; }
 #header-title p  { font-size:.64rem; color:#5a7a98; margin-top:2px; }
 #controls { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
 .ctrl-group { display:flex; flex-direction:column; gap:3px; }
 .ctrl-group label { font-size:.6rem; color:#5a7a98; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
-select { background:#0d2035; color:#c8dff0; border:1px solid #1e4060; border-radius:6px; padding:5px 10px; font-size:.76rem; cursor:pointer; outline:none; min-width:165px; transition:border-color .2s,box-shadow .2s; }
+select {
+  background:#0d2035; color:#c8dff0; border:1px solid #1e4060;
+  border-radius:6px; padding:5px 10px; font-size:.76rem; cursor:pointer;
+  outline:none; min-width:165px; transition:border-color .2s,box-shadow .2s;
+}
 select:hover { border-color:#4a9fd4; }
 select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
-.btn-reset { background:transparent; color:#7ec8f4; border:1px solid #2a5a8c; border-radius:6px; padding:5px 14px; font-size:.76rem; cursor:pointer; transition:background .2s,border-color .2s; white-space:nowrap; }
+.btn-reset {
+  background:transparent; color:#7ec8f4; border:1px solid #2a5a8c;
+  border-radius:6px; padding:5px 14px; font-size:.76rem; cursor:pointer;
+  transition:background .2s,border-color .2s; white-space:nowrap;
+}
 .btn-reset:hover { background:#1a3a5c; border-color:#4a9fd4; }
-#export-toolbar { background:#050f1a; border-bottom:1px solid #0e2030; padding:5px 16px; display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
-#export-toolbar .tb-label { font-size:.6rem; color:#3a5a70; text-transform:uppercase; letter-spacing:.5px; font-weight:600; white-space:nowrap; }
-.btn-exp { border-radius:5px; padding:4px 11px; font-size:.69rem; cursor:pointer; transition:all .2s; white-space:nowrap; border:1px solid; background:transparent; }
-.btn-exp.national { border-color:rgba(140,100,210,.45); color:#b090f0; }
-.btn-exp.national:hover { background:rgba(80,40,150,.3); border-color:#b090f0; }
-.btn-exp.reg { border-color:rgba(230,130,190,.4); color:#f090d0; }
-.btn-exp.reg:hover { background:rgba(120,30,80,.3); border-color:#f090d0; }
-.btn-exp.dep { border-color:rgba(230,150,40,.4); color:#e0a040; }
-.btn-exp.dep:hover { background:rgba(100,60,0,.3); border-color:#e0a040; }
-.btn-exp.clpe { border-color:rgba(74,159,212,.4); color:#70c0f0; }
-.btn-exp.clpe:hover { background:rgba(26,90,140,.3); border-color:#70c0f0; }
-.btn-exp.png { border-color:rgba(50,200,100,.4); color:#50e090; }
-.btn-exp.png:hover { background:rgba(10,80,40,.3); border-color:#50e090; }
-.hidden { display:none !important; }
-#nav-bar { background:#061220; border-bottom:1px solid #102030; padding:5px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; min-height:28px; gap:10px; }
+
+/* Breadcrumb nav bar */
+#nav-bar {
+  background:#061220; border-bottom:1px solid #102030;
+  padding:5px 20px; display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0; min-height:28px; gap:10px;
+}
 #nav-path { display:flex; align-items:center; gap:2px; flex-wrap:wrap; }
-.nav-node { font-size:.71rem; color:#5a8aaa; padding:2px 7px; border-radius:4px; cursor:pointer; transition:color .15s,background .15s; white-space:nowrap; }
+.nav-node {
+  font-size:.71rem; color:#5a8aaa; padding:2px 7px;
+  border-radius:4px; cursor:pointer; transition:color .15s,background .15s;
+  white-space:nowrap;
+}
 .nav-node:hover  { color:#9dd4f0; background:rgba(74,159,212,.12); }
 .nav-node.active { color:#daeeff; font-weight:600; cursor:default; }
 .nav-node.active:hover { background:transparent; }
 .nav-sep { color:#253c50; font-size:.71rem; }
-.nav-hint { font-size:.64rem; color:#2a4d60; font-style:italic; white-space:nowrap; }
+.nav-hint { font-size:.66rem; color:#2a5070; font-style:italic; white-space:nowrap; }
+.hidden  { display:none !important; }
+
+/* Map + panel wrap */
 #map-wrap { flex:1; display:flex; position:relative; overflow:hidden; }
-#map { flex:1; background:#0c1825; cursor:grab; }
-#export-panel { width:0; overflow:hidden; background:#071018; border-left:1px solid #192d40; display:flex; flex-direction:column; transition:width .3s cubic-bezier(.4,0,.2,1); flex-shrink:0; }
+#map { flex:1; background:#0c1825; }
+
+/* Export panel */
+#export-panel {
+  width:0; overflow:hidden; background:#071018;
+  border-left:1px solid #192d40;
+  display:flex; flex-direction:column;
+  transition:width .3s cubic-bezier(.4,0,.2,1);
+  flex-shrink:0;
+}
 #export-panel.open { width:310px; }
 #export-inner { width:310px; display:flex; flex-direction:column; height:100%; }
-#export-header { background:linear-gradient(135deg,#0a2038,#102840); padding:13px 15px; border-bottom:1px solid #1a3550; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-shrink:0; }
+
+#export-header {
+  background:linear-gradient(135deg,#0a2038,#102840);
+  padding:13px 15px; border-bottom:1px solid #1a3550;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+  flex-shrink:0;
+}
 #export-header-text h3 { font-size:.86rem; color:#7ec8f4; font-weight:700; line-height:1.35; }
 #export-header-text p  { font-size:.67rem; color:#3d6a88; margin-top:3px; }
-.btn-close { background:transparent; border:none; color:#3a6080; font-size:1.25rem; cursor:pointer; line-height:1; padding:0 2px; flex-shrink:0; transition:color .2s; }
+.btn-close {
+  background:transparent; border:none; color:#3a6080;
+  font-size:1.25rem; cursor:pointer; line-height:1;
+  padding:0 2px; flex-shrink:0; transition:color .2s;
+}
 .btn-close:hover { color:#7ec8f4; }
-#export-actions { padding:10px 13px; border-bottom:1px solid #0f2030; flex-shrink:0; display:flex; flex-direction:column; gap:7px; }
-.btn-export { width:100%; padding:8px 12px; border-radius:7px; font-size:.74rem; cursor:pointer; font-weight:600; transition:all .2s; border:1px solid; }
-.btn-export.csv { background:rgba(26,122,191,.16); color:#70c0f0; border-color:rgba(74,159,212,.35); }
+
+#export-actions { padding:10px 13px; border-bottom:1px solid #0f2030; flex-shrink:0; }
+.btn-export {
+  width:100%; padding:8px 12px; border-radius:7px;
+  font-size:.74rem; cursor:pointer; font-weight:600;
+  transition:all .2s; border:1px solid;
+}
+.btn-export.csv {
+  background:rgba(26,122,191,.16); color:#70c0f0;
+  border-color:rgba(74,159,212,.35);
+}
 .btn-export.csv:hover { background:rgba(26,122,191,.32); border-color:#70c0f0; }
-.btn-export.png-exp { background:rgba(26,140,80,.16); color:#50e090; border-color:rgba(50,200,100,.35); }
-.btn-export.png-exp:hover { background:rgba(26,140,80,.32); border-color:#50e090; }
+
 #export-search-wrap { padding:8px 13px 4px; flex-shrink:0; }
-#export-search { width:100%; background:#0c1e2e; color:#b8d8f0; border:1px solid #1a3550; border-radius:6px; padding:6px 10px; font-size:.73rem; outline:none; transition:border-color .2s; }
+#export-search {
+  width:100%; background:#0c1e2e; color:#b8d8f0;
+  border:1px solid #1a3550; border-radius:6px;
+  padding:6px 10px; font-size:.73rem; outline:none;
+  transition:border-color .2s;
+}
 #export-search:focus { border-color:#4a9fd4; }
+
 #export-list { flex:1; overflow-y:auto; padding:4px 0; }
 #export-list::-webkit-scrollbar { width:4px; }
 #export-list::-webkit-scrollbar-track { background:#071018; }
 #export-list::-webkit-scrollbar-thumb { background:#192d40; border-radius:2px; }
-.com-item { display:flex; align-items:center; gap:9px; padding:5px 13px; border-bottom:1px solid rgba(15,35,55,.6); transition:background .12s; }
+.com-item {
+  display:flex; align-items:center; gap:9px;
+  padding:5px 13px; border-bottom:1px solid rgba(15,35,55,.6);
+  transition:background .12s;
+}
 .com-item:hover { background:rgba(74,159,212,.07); }
-.com-code { font-size:.64rem; color:#3a6a8a; font-family:monospace; min-width:48px; flex-shrink:0; }
+.com-code { font-size:.64rem; color:#3a6a8a; font-family:monospace; min-width:42px; flex-shrink:0; }
 .com-name { font-size:.75rem; color:#b8d8f0; }
-#loading { position:fixed; inset:0; background:#0a1520; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; transition:opacity .5s; }
+
+/* Loading */
+#loading {
+  position:fixed; inset:0; background:#0a1520;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:9999; transition:opacity .5s;
+}
 #loading.fade-out { opacity:0; pointer-events:none; }
 #loading-logo { font-size:2.5rem; margin-bottom:20px; }
 #loading h2 { color:#7ec8f4; font-size:1rem; margin-bottom:24px; font-weight:500; }
 #loading-bar-wrap { width:280px; height:4px; background:#1a3a5c; border-radius:4px; overflow:hidden; }
 #loading-bar { height:100%; background:linear-gradient(90deg,#1a7abf,#7ec8f4); width:0%; border-radius:4px; transition:width .3s ease; }
 #loading-status { color:#4a7a9a; font-size:.72rem; margin-top:10px; }
-.tooltip-clpe { background:rgba(4,12,22,.97) !important; border:1px solid #2a6090 !important; font-size:.77rem !important; padding:8px 13px !important; border-radius:8px !important; box-shadow:0 4px 20px rgba(0,0,0,.8) !important; pointer-events:none !important; max-width:300px !important; line-height:1.7 !important; }
+
+/* Tooltip */
+.tooltip-clpe {
+  background:rgba(4,12,22,.97) !important; border:1px solid #2a6090 !important;
+  font-size:.77rem !important; padding:8px 13px !important;
+  border-radius:8px !important; box-shadow:0 4px 20px rgba(0,0,0,.8) !important;
+  pointer-events:none !important; max-width:300px !important; line-height:1.7 !important;
+}
 .tooltip-clpe::before { display:none !important; }
 .tooltip-clpe .tt-region { display:block; font-size:.62rem; color:#ffe070 !important; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
 .tooltip-clpe .tt-dep    { display:block; font-size:.69rem; color:#f5b84a !important; }
 .tooltip-clpe .tt-com    { display:block; font-size:.67rem; color:#8ecce8 !important; font-style:italic; }
 .tooltip-clpe .tt-clpe   { display:block; font-size:.83rem; color:#e8f4ff !important; font-weight:700; border-top:1px solid rgba(74,159,212,.25); padding-top:4px; margin-top:3px; }
-#legend { position:absolute; bottom:22px; left:14px; background:rgba(4,12,22,.92); border:1px solid #1a3550; border-radius:9px; padding:10px 14px; font-size:.69rem; z-index:1000; min-width:160px; box-shadow:0 4px 18px rgba(0,0,0,.6); }
+.tooltip-clpe .tt-hint   { display:block; font-size:.6rem; color:#2a5a78 !important; margin-top:2px; font-style:italic; }
+.tooltip-clpe .tt-dep-action { display:block; font-size:.67rem; color:#c8a030 !important; font-style:italic; }
+
+/* Legend */
+#legend {
+  position:absolute; bottom:22px; right:14px;
+  background:rgba(4,12,22,.92); border:1px solid #1a3550;
+  border-radius:9px; padding:10px 14px; font-size:.69rem;
+  z-index:1000; min-width:172px; box-shadow:0 4px 18px rgba(0,0,0,.6);
+}
 #legend h3 { color:#7ec8f4; font-size:.71rem; margin-bottom:8px; font-weight:700; letter-spacing:.3px; }
 .leg-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; color:#7090a8; }
 .leg-swatch { width:24px; height:10px; border-radius:3px; flex-shrink:0; }
 .leg-line { width:24px; flex-shrink:0; }
-.clpe-label { font-size:.54rem; color:#90d0f8; font-weight:700; text-shadow:0 0 4px #000,0 0 9px #000,0 0 14px #000; white-space:nowrap; pointer-events:none; line-height:1.2; text-align:center; }
 </style>
 </head>
 <body>
 
+<!-- Loading -->
 <div id="loading">
-  <div id="loading-logo">&#128506;</div>
-  <h2>Chargement de la carte&hellip;</h2>
+  <div id="loading-logo">🗺</div>
+  <h2>Chargement de la carte…</h2>
   <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
-  <div id="loading-status">Initialisation&hellip;</div>
+  <div id="loading-status">Initialisation…</div>
 </div>
 
+<!-- Header -->
 <div id="header">
   <div id="header-title">
-    <h1>Comités Locaux Pour l&apos;Emploi &mdash; France</h1>
-    <p>362 comités &middot; France métropolitaine et DOM &middot; Cliquez et faites glisser pour déplacer</p>
+    <h1>Comités Locaux Pour l'Emploi — France</h1>
+    <p>362 comités · Navigation région → département → CLPE · Exportez la liste des communes</p>
   </div>
   <div id="controls">
     <div class="ctrl-group">
@@ -119,39 +191,33 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
       </select>
     </div>
     <div class="ctrl-group">
-      <label>Comité Local Pour l&apos;Emploi</label>
+      <label>Comité Local Pour l'Emploi</label>
       <select id="sel-clpe" onchange="onClpeChange()">
         <option value="">— Tous les CLPE —</option>
       </select>
     </div>
-    <button class="btn-reset" onclick="resetView()">&#8634; Vue d&apos;ensemble</button>
+    <button class="btn-reset" onclick="resetView()">↺ Vue d'ensemble</button>
   </div>
 </div>
 
-<div id="export-toolbar">
-  <span class="tb-label">&#128229; Exports CSV :</span>
-  <button class="btn-exp national" onclick="exportNational()">&#127757; France entière</button>
-  <button id="btn-exp-reg"  class="btn-exp reg  hidden" onclick="exportRegion()">&#128205; —</button>
-  <button id="btn-exp-dep"  class="btn-exp dep  hidden" onclick="exportDep()">&#127963; —</button>
-  <button id="btn-exp-clpe" class="btn-exp clpe hidden" onclick="openCLPEPanel()">&#129309; Voir CLPE</button>
-  <button id="btn-exp-png"  class="btn-exp png  hidden" onclick="startPNGExport()">&#128444; Exporter PNG</button>
-</div>
-
+<!-- Breadcrumb -->
 <div id="nav-bar">
   <div id="nav-path">
-    <span class="nav-node active" id="nav-national" onclick="resetView()">&#127467;&#127479; France</span>
-    <span class="nav-sep hidden" id="nav-reg-sep">&rsaquo;</span>
-    <span class="nav-node hidden" id="nav-reg-node"></span>
-    <span class="nav-sep hidden" id="nav-dep-sep">&rsaquo;</span>
-    <span class="nav-node hidden" id="nav-dep-node"></span>
-    <span class="nav-sep hidden" id="nav-clpe-sep">&rsaquo;</span>
-    <span class="nav-node hidden" id="nav-clpe-node"></span>
+    <span id="nav-national" class="nav-node active" onclick="resetView()">🌍 France</span>
+    <span id="nav-reg-sep"   class="nav-sep hidden"> ›</span>
+    <span id="nav-reg-node"  class="nav-node hidden"></span>
+    <span id="nav-dep-sep"   class="nav-sep hidden"> ›</span>
+    <span id="nav-dep-node"  class="nav-node hidden"></span>
+    <span id="nav-clpe-sep"  class="nav-sep hidden"> ›</span>
+    <span id="nav-clpe-node" class="nav-node active hidden"></span>
   </div>
-  <span class="nav-hint" id="nav-hint">Survolez la carte pour voir commune · CLPE · département · région</span>
+  <div id="nav-hint">Cliquez sur une région pour zoomer</div>
 </div>
 
+<!-- Map + Export side panel -->
 <div id="map-wrap">
   <div id="map"></div>
+
   <div id="export-panel">
     <div id="export-inner">
       <div id="export-header">
@@ -159,11 +225,10 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
           <h3 id="export-clpe-title">—</h3>
           <p id="export-count">—</p>
         </div>
-        <button class="btn-close" onclick="hideExportPanel()" title="Fermer">&times;</button>
+        <button class="btn-close" onclick="hideExportPanel()" title="Fermer">×</button>
       </div>
       <div id="export-actions">
-        <button class="btn-export csv" onclick="exportCSV()">&#128229; Exporter communes en CSV</button>
-        <button class="btn-export png-exp" onclick="startPNGExport()">&#128444; Exporter la carte en PNG</button>
+        <button class="btn-export csv" onclick="exportCSV()">📥 Exporter en CSV</button>
       </div>
       <div id="export-search-wrap">
         <input id="export-search" type="text" placeholder="Rechercher une commune…" oninput="filterExportList(this.value)">
@@ -171,723 +236,546 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
       <div id="export-list"></div>
     </div>
   </div>
+
+  <!-- Legend -->
   <div id="legend">
     <h3>Légende</h3>
-    <div class="leg-item"><div class="leg-swatch" style="background:linear-gradient(90deg,#1a5276,#2980b9,#1abc9c);opacity:.8;border:1px solid rgba(30,100,160,.4);"></div>Comité Local Pour l&apos;Emploi</div>
-    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e879b0" stroke-width="2.5"/></svg></div>Région</div>
-    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.8"/></svg></div>Département</div>
-    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(100,180,240,0.9)" stroke-width="1.3"/></svg></div>Commune</div>
+    <div class="leg-item">
+      <div class="leg-swatch" style="background:linear-gradient(90deg,#1a5276,#2980b9,#1abc9c);opacity:.8;border:1px solid rgba(30,100,160,.4);"></div>
+      Comité Local Pour l'Emploi
+    </div>
+    <div class="leg-item">
+      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8c040" stroke-width="2.5"/></svg></div>
+      Région
+    </div>
+    <div class="leg-item">
+      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.5"/></svg></div>
+      Département
+    </div>
+    <div class="leg-item">
+      <div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(140,195,235,.55)" stroke-width="0.7"/></svg></div>
+      Commune <em style="font-size:.6rem;color:#3a6080;">(contour fin)</em>
+    </div>
   </div>
 </div>
 
 <script>
-const PALETTE=['#1a5276','#1f8cbf','#117a65','#154360','#2980b9','#1abc9c','#0e6251','#2471a3','#148f77','#1a6da0','#0d5073','#239b56'];
-const clpeColor=idx=>PALETTE[idx%PALETTE.length];
-const CLPE_NORMAL=p=>({weight:1.0,color:'rgba(20,60,110,0.5)',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.72});
-const CLPE_HOVER =p=>({weight:2.5,color:'#7ec8f4',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.9});
-// Contours seulement — fill transparent
-const DEP_STYLE={weight:2.0,color:'#e8a030',fill:false};
-const REG_STYLE={weight:1.8,color:'#e879b0',fill:false};  // rose/pink
+// ─── Palette ──────────────────────────────────────────────────────────────
+const PALETTE = ['#1a5276','#1f8cbf','#117a65','#154360','#2980b9','#1abc9c','#0e6251','#2471a3','#148f77','#1a6da0','#0d5073','#239b56'];
+const clpeColor = idx => PALETTE[idx % PALETTE.length];
 
-const REGS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
-const DEPS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon','Val-de-Marne']);
+// ─── Territoires exclus (sans aucun CLPE) ────────────────────────────────
+// Val-de-Marne a bien 2 CLPEs mais avec dep='Essonne'/'Seine-Saint-Denis' dans clpe.json
+// (erreur de donnée source) → NE PAS l'exclure
+const DEPS_NO_CLPE = new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
+const REGS_NO_CLPE = new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
 
-const bar=document.getElementById('loading-bar');
-const status=document.getElementById('loading-status');
-function setProgress(pct,msg){bar.style.width=pct+'%';status.textContent=msg;}
+function isComExcluded(code) {
+  if (!code) return true;
+  if (code === '97131') return true; // Terre-de-Haut: coordonnées erronées dans ce fichier
+  return false;
+}
 
-const map=L.map('map',{center:[46.5,2.5],zoom:6,preferCanvas:true,zoomSnap:.5,dragging:true,scrollWheelZoom:true,touchZoom:true,doubleClickZoom:false,zoomControl:true});
+// ─── Progress ─────────────────────────────────────────────────────────────
+const bar = document.getElementById('loading-bar');
+const status = document.getElementById('loading-status');
+function setProgress(pct,msg){ bar.style.width=pct+'%'; status.textContent=msg; }
+
+// ─── Map ──────────────────────────────────────────────────────────────────
+const map = L.map('map',{ center:[46.5,2.5], zoom:6, preferCanvas:true, zoomSnap:.5 });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
   attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-  maxZoom:18,opacity:.55,crossOrigin:true
+  maxZoom:18, opacity:.55
 }).addTo(map);
 
-const comPane=map.createPane('comPane');   comPane.style.zIndex='420';
-const clpePane=map.createPane('clpePane'); clpePane.style.zIndex='430';
-const depPane=map.createPane('depPane');   depPane.style.zIndex='440';
-const regPane=map.createPane('regPane');   regPane.style.zIndex='450';
-comPane.style.pointerEvents='none';
-clpePane.style.pointerEvents='auto';
-depPane.style.pointerEvents='none';
-regPane.style.pointerEvents='none';
+// ─── Panes (z-index = priorité de clic ; plus haut = intercepte en premier) ─
+//  comPane < clpePane < depPane < regPane
+const comPane  = map.createPane('comPane');  comPane.style.zIndex  = '420';
+const clpePane = map.createPane('clpePane'); clpePane.style.zIndex = '430';
+const depPane  = map.createPane('depPane');  depPane.style.zIndex  = '440';
+const regPane  = map.createPane('regPane');  regPane.style.zIndex  = '450';
+comPane.style.pointerEvents  = 'none';
+clpePane.style.pointerEvents = 'none';
+depPane.style.pointerEvents  = 'none';
+regPane.style.pointerEvents  = 'auto'; // niveau national : on clique sur régions
 
-let navLevel='national';
-let nav={region:null,department:null,clpe:null};
+// ─── État de navigation ───────────────────────────────────────────────────
+let navLevel = 'national';
+let nav = { region:null, department:null, clpe:null };
 
-function updateNavBar(){
-  document.getElementById('nav-national').classList.toggle('active',navLevel==='national');
-  const show=id=>document.getElementById(id).classList.remove('hidden');
-  const hide=id=>document.getElementById(id).classList.add('hidden');
-  if(nav.region){
-    show('nav-reg-sep');show('nav-reg-node');
-    const el=document.getElementById('nav-reg-node');
-    el.textContent=nav.region;
-    el.classList.toggle('active',navLevel==='region');
-    el.onclick=()=>{
-      if(navLevel==='region')return;
-      nav.department=null;nav.clpe=null;navLevel='region';
-      hideExportPanel();updateNavBar();
-      repopulateDeps(nav.region);repopulateClpes(nav.region,'');
-      document.getElementById('sel-dep').value='';document.getElementById('sel-clpe').value='';
+function updatePanes() {
+  regPane.style.pointerEvents  = navLevel==='national'   ? 'auto' : 'none';
+  depPane.style.pointerEvents  = navLevel==='region'     ? 'auto' : 'none';
+  clpePane.style.pointerEvents = navLevel==='department' ? 'auto' : 'none';
+}
+
+const HINTS = {
+  national:   'Cliquez sur une région pour zoomer',
+  region:     'Cliquez sur un département pour zoomer',
+  department: 'Cliquez sur un CLPE pour zoomer et exporter les communes',
+  clpe:       'Consultez et exportez les communes ci-contre'
+};
+
+function updateNavBar() {
+  document.getElementById('nav-hint').textContent = HINTS[navLevel]||'';
+  const show = id => document.getElementById(id).classList.remove('hidden');
+  const hide = id => document.getElementById(id).classList.add('hidden');
+  document.getElementById('nav-national').classList.toggle('active', navLevel==='national');
+
+  if (nav.region) {
+    show('nav-reg-sep'); show('nav-reg-node');
+    const el = document.getElementById('nav-reg-node');
+    el.textContent = nav.region;
+    el.classList.toggle('active', navLevel==='region');
+    el.onclick = () => {
+      if (navLevel==='region') return;
+      navLevel='region'; nav.department=null; nav.clpe=null;
+      hideExportPanel(); updatePanes(); updateNavBar();
+      repopulateDeps(nav.region);
+      repopulateClpes(nav.region,'');
+      document.getElementById('sel-dep').value='';
+      document.getElementById('sel-clpe').value='';
       const f=REG_DATA.features.find(f=>f.properties.nom_officiel===nav.region);
-      if(f)zoomToBbox(f.properties.bbox);
+      if (f) zoomToBbox(f.properties.bbox);
     };
-  } else {hide('nav-reg-sep');hide('nav-reg-node');}
-  if(nav.department){
-    show('nav-dep-sep');show('nav-dep-node');
-    const el=document.getElementById('nav-dep-node');
-    el.textContent=nav.department;
-    el.classList.toggle('active',navLevel==='department');
-    el.onclick=()=>{
-      if(navLevel==='department')return;
-      nav.clpe=null;navLevel='department';
-      hideExportPanel();updateNavBar();
-      repopulateClpes(nav.region,nav.department);
+  } else { hide('nav-reg-sep'); hide('nav-reg-node'); }
+
+  if (nav.department) {
+    show('nav-dep-sep'); show('nav-dep-node');
+    const el = document.getElementById('nav-dep-node');
+    el.textContent = nav.department;
+    el.classList.toggle('active', navLevel==='department');
+    el.onclick = () => {
+      if (navLevel==='department') return;
+      navLevel='department'; nav.clpe=null;
+      hideExportPanel(); updatePanes(); updateNavBar();
+      repopulateClpes(nav.region, nav.department);
       document.getElementById('sel-clpe').value='';
       const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===nav.department);
-      if(f)zoomToBbox(f.properties.bbox);
+      if (f) zoomToBbox(f.properties.bbox);
     };
-  } else {hide('nav-dep-sep');hide('nav-dep-node');}
-  if(nav.clpe){
-    show('nav-clpe-sep');show('nav-clpe-node');
-    const el=document.getElementById('nav-clpe-node');
-    el.textContent=nav.clpe;el.classList.add('active');el.onclick=null;
-  } else {hide('nav-clpe-sep');hide('nav-clpe-node');}
-  updateExportBar();
+  } else { hide('nav-dep-sep'); hide('nav-dep-node'); }
+
+  if (nav.clpe) {
+    show('nav-clpe-sep'); show('nav-clpe-node');
+    const el = document.getElementById('nav-clpe-node');
+    el.textContent = nav.clpe;
+    el.classList.add('active');
+    el.onclick = null;
+  } else { hide('nav-clpe-sep'); hide('nav-clpe-node'); }
 }
 
-function updateExportBar(){
-  const btnReg=document.getElementById('btn-exp-reg');
-  const btnDep=document.getElementById('btn-exp-dep');
-  const btnClpe=document.getElementById('btn-exp-clpe');
-  const btnPng=document.getElementById('btn-exp-png');
-  if(nav.region){btnReg.classList.remove('hidden');btnReg.textContent='📍 '+nav.region;}else btnReg.classList.add('hidden');
-  if(nav.department){btnDep.classList.remove('hidden');btnDep.textContent='🏛 '+nav.department;}else btnDep.classList.add('hidden');
-  nav.clpe?btnClpe.classList.remove('hidden'):btnClpe.classList.add('hidden');
-  btnPng.classList.remove('hidden'); // toujours visible
-}
-
-// ─── Data ──────────────────────────────────────────────────────────────────
-let REG_DATA,DEP_DATA,CLPE_DATA,COM_DATA;
-let allDeps=[],allClpes=[];
-let regToDeps={},depToClpes={},depToRegName={};
-let depCodeToName={},regCodeToName={};
+// ─── Données globales ─────────────────────────────────────────────────────
+let REG_DATA, DEP_DATA, CLPE_DATA, COM_DATA, CLPE_COMMUNES;
+let allDeps=[], allClpes=[];
+let regToDeps={}, depToClpes={}, depToRegName={};
+let clpeToDep={}, clpeToReg={}; // dep/reg déduits des codes commune, pas de clpe.json
 let COM_CENTROIDS=[];
-let comByClpe={},comByDep={},comByReg={};
-let comNameToInfo={};
 
-function buildLookups(){
-  DEP_DATA.features.forEach(f=>{depCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
-  REG_DATA.features.forEach(f=>{regCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
-}
-function buildComLists(){
-  comByClpe={};comByDep={};comByReg={};comNameToInfo={};
-  COM_DATA.features.forEach(f=>{
-    const p=f.properties;
-    const depName=depCodeToName[p.dep]||p.dep||'';
-    const regName=regCodeToName[p.reg]||p.reg||'';
-    const clpeName=p.clpe||'';
-    comNameToInfo[p.nom]={dep:depName,reg:regName};
-    const rec={code:p.code,nom:p.nom,clpe:clpeName,dep:depName,reg:regName};
-    if(clpeName){if(!comByClpe[clpeName])comByClpe[clpeName]=[];comByClpe[clpeName].push(rec);}
-    if(depName) {if(!comByDep[depName]) comByDep[depName]=[];  comByDep[depName].push(rec);}
-    if(regName) {if(!comByReg[regName]) comByReg[regName]=[];  comByReg[regName].push(rec);}
+function buildCentroids() {
+  COM_CENTROIDS = COM_DATA.features.map(feat=>{
+    const g=feat.geometry;
+    const ring = g.type==='Polygon' ? g.coordinates[0] : g.coordinates[0][0];
+    let sx=0,sy=0,n=ring.length-1;
+    for(let i=0;i<n;i++){sx+=ring[i][0];sy+=ring[i][1];}
+    return {name:feat.properties.nom_officiel, x:sx/n, y:sy/n};
   });
 }
-// Extrait le code département depuis le code INSEE commune
-// (2 chiffres pour la métropole, 3 pour les DOM commençant par 97)
-function getDepCodeFromInsee(code){
-  if(!code)return'';
-  if(code.startsWith('97'))return code.slice(0,3);
-  return code.slice(0,2);
-}
-// Centroïde pondéré par l'aire (formule de Shoelace) pour un ring fermé
-function polyAreaCentroid(ring){
-  let A=0,cx=0,cy=0;
-  const n=ring.length-1;
-  for(let i=0;i<n;i++){
-    const x0=ring[i][0],y0=ring[i][1],x1=ring[i+1][0],y1=ring[i+1][1];
-    const c=x0*y1-x1*y0;A+=c;cx+=(x0+x1)*c;cy+=(y0+y1)*c;
-  }
-  A/=2;
-  if(Math.abs(A)<1e-14){
-    let sx=0,sy=0;for(let i=0;i<n;i++){sx+=ring[i][0];sy+=ring[i][1];}
-    return{x:n>0?sx/n:0,y:n>0?sy/n:0,area:0};
-  }
-  return{x:cx/(6*A),y:cy/(6*A),area:Math.abs(A)};
-}
-function buildCentroids(){
-  COM_CENTROIDS=[];
-  COM_DATA.features.forEach(feat=>{
-    const g=feat.geometry;if(!g)return;
-    const polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
-    let bestArea=0,bestX=0,bestY=0,totalArea=0;
-    polys.forEach(poly=>{
-      const ring=poly[0];if(!ring||ring.length<3)return;
-      const r=polyAreaCentroid(ring);
-      totalArea+=r.area;
-      if(r.area>bestArea){bestArea=r.area;bestX=r.x;bestY=r.y;}
-    });
-    if(polys.length===0)return;
-    COM_CENTROIDS.push({name:feat.properties.nom,code:feat.properties.code,x:bestX,y:bestY,area:totalArea});
-  });
-}
-function nearestCommune(lng,lat){
+
+function nearestCommune(lng,lat) {
   let best=null,bd=Infinity;
-  for(const c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
-  if(!best)return null;
-  // Département et région dérivés du code INSEE (2 ou 3 premiers chiffres)
-  const depCode=getDepCodeFromInsee(best.code);
-  const depName=depCodeToName[depCode]||'';
-  const regName=depToRegName[depName]||'';
-  return{name:best.name,dep:depName,reg:regName};
-}
-function buildCascading(){
-  const rcn={};
-  REG_DATA.features.forEach(f=>rcn[f.properties.code_insee]=f.properties.nom_officiel);
-  DEP_DATA.features.forEach(f=>{
-    const dep=f.properties.nom_officiel;
-    const regName=rcn[f.properties.code_insee_de_la_region||'']||'';
-    depToRegName[dep]=regName;
-    if(!regToDeps[regName])regToDeps[regName]=[];
-    regToDeps[regName].push(dep);
-  });
-  CLPE_DATA.features.forEach(f=>{
-    const dep=f.properties.dep||'';
-    if(!depToClpes[dep])depToClpes[dep]=[];
-    depToClpes[dep].push(f.properties.CLPE);
-  });
-  Object.values(regToDeps).forEach(a=>a.sort());
-  Object.values(depToClpes).forEach(a=>a.sort());
-  allDeps=DEP_DATA.features.map(f=>f.properties.nom_officiel).sort();
-  allClpes=[...new Set(CLPE_DATA.features.map(f=>f.properties.CLPE))].sort();
+  for(let c of COM_CENTROIDS){const d=(c.x-lng)**2+(c.y-lat)**2;if(d<bd){bd=d;best=c;}}
+  return best?best.name:null;
 }
 
-async function loadAll(){
+// Extrait le code département depuis un code INSEE commune
+// "01001" → "01", "2A197" → "2A", "2B033" → "2B"
+// "97101" → "971" (Guadeloupe), "97209" → "972" (Martinique), etc.
+function comCodeToDeptCode(code) {
+  if (!code) return '';
+  if (code[1] === 'A' || code[1] === 'B') return code.slice(0, 2); // Corse
+  if (code.startsWith('97'))              return code.slice(0, 3); // DOM (971-976)
+  return code.slice(0, 2);
+}
+
+function buildCascading() {
+  // ── Lookups depuis dep.json et reg.json ─────────────────────────────
+  const regCodeToName = {};
+  REG_DATA.features.forEach(f => regCodeToName[f.properties.code_insee] = f.properties.nom_officiel);
+
+  const depCodeToName    = {}; // "01" → "Ain"
+  const depCodeToRegName = {}; // "01" → "Auvergne-Rhône-Alpes"
+  DEP_DATA.features.forEach(f => {
+    const c = f.properties.code_insee;
+    depCodeToName[c]    = f.properties.nom_officiel;
+    depCodeToRegName[c] = regCodeToName[f.properties.code_insee_de_la_region || ''] || '';
+  });
+
+  // ── dep → région (pour navigation par clic sur département) ─────────
+  DEP_DATA.features.forEach(f => {
+    const depName = f.properties.nom_officiel;
+    const regName = regCodeToName[f.properties.code_insee_de_la_region || ''] || '';
+    depToRegName[depName] = regName;
+    if (!regToDeps[regName]) regToDeps[regName] = [];
+    regToDeps[regName].push(depName);
+  });
+
+  // ── Dériver dep/reg de chaque CLPE depuis les codes commune ─────────
+  // Pour chaque CLPE, le département majoritaire parmi ses communes
+  for (const [clpeName, communes] of Object.entries(CLPE_COMMUNES)) {
+    if (!communes.length) continue;
+    // Comptage par code département
+    const counts = {};
+    for (const c of communes) {
+      const dc = comCodeToDeptCode(c.code);
+      counts[dc] = (counts[dc] || 0) + 1;
+    }
+    // Département dominant (plus grand nombre de communes)
+    const dominantCode = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    const depName = depCodeToName[dominantCode]    || '';
+    const regName = depCodeToRegName[dominantCode] || '';
+    clpeToDep[clpeName] = depName;
+    clpeToReg[clpeName] = regName;
+
+    // Construire depToClpes depuis les données réelles
+    if (depName) {
+      if (!depToClpes[depName]) depToClpes[depName] = [];
+      depToClpes[depName].push(clpeName);
+    }
+  }
+
+  Object.values(regToDeps).forEach(a => a.sort());
+  Object.values(depToClpes).forEach(a => a.sort());
+  allDeps  = DEP_DATA.features.map(f => f.properties.nom_officiel).sort();
+  allClpes = [...new Set(CLPE_DATA.features.map(f => f.properties.CLPE))].sort();
+}
+
+// ─── Chargement ───────────────────────────────────────────────────────────
+async function loadAll() {
   setProgress(5,'Chargement des régions…');
-  const regRaw=await fetch('data/reg.json').then(r=>r.json());
-  REG_DATA={...regRaw,features:regRaw.features.filter(f=>!REGS_NO_CLPE.has(f.properties.nom_officiel))};
-  setProgress(14,'Chargement des départements…');
-  const depRaw=await fetch('data/dep.json').then(r=>r.json());
-  DEP_DATA={...depRaw,features:depRaw.features.filter(f=>!DEPS_NO_CLPE.has(f.properties.nom_officiel))};
-  setProgress(25,'Chargement des comités locaux…');
-  CLPE_DATA=await fetch('data/clpe.json').then(r=>r.json());
-  setProgress(36,'Chargement des communes (incluant DOM)…');
-  COM_DATA=await fetch('data/commune.geojson').then(r=>r.json());
-  setProgress(72,'Construction des index…');
-  buildLookups();buildComLists();buildCentroids();buildCascading();
-  setProgress(82,'Masque mondial…');
+  const regRaw = await fetch('data/reg.json').then(r=>r.json());
+  REG_DATA = {...regRaw, features: regRaw.features.filter(f=>!REGS_NO_CLPE.has(f.properties.nom_officiel))};
+
+  setProgress(16,'Chargement des départements…');
+  const depRaw = await fetch('data/dep.json').then(r=>r.json());
+  DEP_DATA = {...depRaw, features: depRaw.features.filter(f=>!DEPS_NO_CLPE.has(f.properties.nom_officiel))};
+
+  setProgress(32,'Chargement des comités locaux…');
+  CLPE_DATA = await fetch('data/clpe.json').then(r=>r.json());
+
+  setProgress(50,'Chargement des communes…');
+  const comRaw = await fetch('data/com.json').then(r=>r.json());
+  COM_DATA = {...comRaw, features: comRaw.features.filter(f=>!isComExcluded(f.properties.code_insee))};
+
+  setProgress(65,'Correspondances communes–CLPE…');
+  CLPE_COMMUNES = await fetch('data/clpe_communes.json').then(r=>r.json());
+
+  setProgress(74,'Préparation…');
+  buildCentroids();
+  buildCascading();
+
+  setProgress(80,'Masque mondial…');
   await addWorldMask();
-  setProgress(91,'Construction des couches…');
+
+  setProgress(90,'Construction des couches…');
   buildLayers();
+
   setProgress(97,'Finalisation…');
-  populateDropdowns();updateNavBar();
-  setTimeout(()=>{setProgress(100,'Prêt !');const o=document.getElementById('loading');o.classList.add('fade-out');setTimeout(()=>o.remove(),600);},200);
+  populateDropdowns();
+  updateNavBar();
+
+  setTimeout(()=>{
+    setProgress(100,'Prêt !');
+    const o=document.getElementById('loading');
+    o.classList.add('fade-out');
+    setTimeout(()=>o.remove(),600);
+  },200);
 }
 
-async function addWorldMask(){
-  try{
+// ─── Masque mondial ───────────────────────────────────────────────────────
+async function addWorldMask() {
+  // Les DOM sont stockés comme des insets à des positions fictives proches de la métropole.
+  // On exclut ces zones du masque pour qu'elles restent visibles.
+  const DOM_BBOXES = [
+    [-4.7, 45.5, -2.8, 46.8],  // Guadeloupe
+    [-4.4, 44.4, -3.3, 45.4],  // Martinique
+    [-4.1, 42.9, -2.7, 44.2],  // Guyane
+    [-3.5, 41.9, -2.2, 42.8],  // La Réunion
+    [-0.3, 41.0,  0.9, 42.2],  // Mayotte
+  ];
+  function bboxPoly([x1,y1,x2,y2]) {
+    return { type:'Polygon', coordinates:[[[x1,y1],[x2,y1],[x2,y2],[x1,y2],[x1,y1]]] };
+  }
+  try {
     const res=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
     const world=await res.json();
-    const mask={type:'FeatureCollection',features:world.features.filter(f=>{const iso=(f.properties&&(f.properties.ISO_A3||f.properties.iso_a3))||'';return iso!=='FRA';})};
+    // On masque tout sauf la France WGS84 (métropole + DOM réels)
+    // ET on ajoute des rectangles supplémentaires pour couvrir la zone Atlantique
+    // SAUF les emplacements des insets DOM
+    const mask={type:'FeatureCollection',features:world.features.filter(f=>{
+      const iso=(f.properties&&(f.properties.ISO_A3||f.properties.iso_a3))||'';
+      return iso!=='FRA';
+    })};
     L.geoJSON(mask,{style:{fillColor:'#0c1825',fillOpacity:1,color:'#0c1825',weight:0},interactive:false}).addTo(map);
-  }catch(e){console.warn('Masque mondial indisponible:',e);}
+
+    // Masque complémentaire : couvre l'Atlantique/Espagne autour des insets DOM
+    // mais laisse les bboxes DOM libres via un MultiPolygon avec trous
+    // Approche simple : masque plein puis on superpose les CLPEs par-dessus (déjà le cas via panes)
+    // → Rien de plus à faire : les panes CLPE/com ont un z-index supérieur au masque
+  } catch(e){console.warn('Masque mondial indisponible:',e);}
 }
 
-const tooltip=L.tooltip({className:'tooltip-clpe',permanent:false,direction:'top',offset:[0,-10]});
-function ttHTML(p,com){
-  // Région et département déterminés par la commune survolée, pas par le CLPE
-  const reg=com?com.reg:(p.reg||'—');
-  const dep=com?com.dep:(p.dep||'—');
-  return '<span class="tt-region">📍 '+reg+'</span>'
-        +'<span class="tt-dep">🏛 '+dep+'</span>'
-        +(com?'<span class="tt-com">🏘 '+com.name+'</span>':'')
-        +'<span class="tt-clpe">🤝 '+(p.CLPE||'—')+'</span>';
+// ─── Couches cartographiques ──────────────────────────────────────────────
+const tooltip = L.tooltip({className:'tooltip-clpe',permanent:false,direction:'top',offset:[0,-10]});
+let clpeLayer, depLayer, regLayer, comLayer;
+
+function ttHTML(p, com, hint) {
+  const _dep = clpeToDep[p.CLPE] || p.dep || '—';
+  const _reg = clpeToReg[p.CLPE] || p.reg || '—';
+  return `<span class="tt-region">📍 ${_reg}</span>`
+       + `<span class="tt-dep">🏛 ${_dep}</span>`
+       + (com?`<span class="tt-com">🏘 ${com}</span>`:'')
+       + `<span class="tt-clpe">🤝 ${p.CLPE||'—'}</span>`
+       + (hint?`<span class="tt-hint">${hint}</span>`:'');
 }
 
-let clpeLayer,depLayer,regLayer,comLayer;
-let regLabelGroup,depLabelGroup,clpeLabelGroup;
+function buildLayers() {
 
-function buildLayers(){
-  const comCanvas=L.canvas({pane:'comPane',tolerance:1});
-  comLayer=L.geoJSON(COM_DATA,{renderer:comCanvas,pane:'comPane',style:{weight:1.3,color:'rgba(100,180,240,0.55)',fill:false},interactive:false}).addTo(map);
-  map.on('zoomend',()=>{
+  // ── Communes : contours fins ────────────────────────────────────────
+  // Poids volontairement inférieur à toutes les autres couches
+  const comCanvas = L.canvas({pane:'comPane',tolerance:1});
+  comLayer = L.geoJSON(COM_DATA, {
+    renderer:comCanvas, pane:'comPane',
+    style:{weight:0.3, color:'rgba(140,200,240,0.18)', fill:false},
+    interactive:false
+  }).addTo(map);
+
+  map.on('zoomend', ()=>{
     const z=map.getZoom();
-    const op=z>=12?0.9:z>=10?0.75:z>=8?0.6:z>=7?0.5:0.38;
-    const w=z>=12?1.8:z>=10?1.5:z>=8?1.3:1.2;
-    comLayer.setStyle({color:'rgba(100,180,240,'+op+')',weight:w});
+    const op = z>=11?0.55 : z>=9?0.38 : z>=7?0.22 : 0.13;
+    const w  = z>=10?0.4 : 0.3;
+    comLayer.setStyle({color:`rgba(140,200,240,${op})`,weight:w});
   });
-  const clpeCanvas=L.canvas({pane:'clpePane',tolerance:2});
-  clpeLayer=L.geoJSON(CLPE_DATA,{
-    renderer:clpeCanvas,pane:'clpePane',
-    style:feat=>CLPE_NORMAL(feat.properties),
+
+  // ── CLPE : couche principale (remplie) ──────────────────────────────
+  const clpeCanvas = L.canvas({pane:'clpePane',tolerance:2});
+  clpeLayer = L.geoJSON(CLPE_DATA, {
+    renderer:clpeCanvas, pane:'clpePane',
+    style:feat=>({weight:0.9, color:'rgba(20,60,110,0.5)', fillColor:clpeColor(feat.properties.color_idx||0), fillOpacity:0.72}),
     onEachFeature(feat,layer){
       const p=feat.properties;
-      layer.on('mouseover',e=>{layer.setStyle(CLPE_HOVER(p));tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat))).addTo(map);});
-      layer.on('mousemove',e=>{tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat)));});
-      layer.on('mouseout',()=>{layer.setStyle(CLPE_NORMAL(p));map.removeLayer(tooltip);});
-      layer.on('click',()=>{
-        nav.clpe=p.CLPE;nav.department=p.dep;nav.region=p.reg;navLevel='clpe';
+      layer.on('mouseover', e=>{
+        layer.setStyle({weight:2.5,color:'#7ec8f4',fillOpacity:.9});
+        tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat),'Cliquez pour zoomer et exporter')).addTo(map);
+      });
+      layer.on('mousemove', e=>{
+        tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat),'Cliquez pour zoomer et exporter'));
+      });
+      layer.on('mouseout', ()=>{clpeLayer.resetStyle(layer); map.removeLayer(tooltip);});
+      layer.on('click', ()=>{
+        nav.clpe=p.CLPE;
+        if(!nav.department) nav.department=clpeToDep[p.CLPE]||p.dep||'';
+        if(!nav.region)     nav.region=clpeToReg[p.CLPE]||p.reg||'';
+        navLevel='clpe';
         document.getElementById('sel-region').value=nav.region||'';
-        repopulateDeps(nav.region);document.getElementById('sel-dep').value=nav.department||'';
-        repopulateClpes(nav.region,nav.department);document.getElementById('sel-clpe').value=p.CLPE;
-        updateNavBar();zoomToBbox(p.bbox);showExportPanel(p.CLPE);
+        repopulateDeps(nav.region);
+        document.getElementById('sel-dep').value=nav.department||'';
+        repopulateClpes(nav.region,nav.department);
+        document.getElementById('sel-clpe').value=p.CLPE;
+        updatePanes(); updateNavBar();
+        zoomToBbox(feat.properties.bbox);
+        showExportPanel(p.CLPE);
       });
     }
   }).addTo(map);
-  depLayer=L.geoJSON(DEP_DATA,{renderer:L.svg({pane:'depPane'}),pane:'depPane',style:DEP_STYLE,interactive:false}).addTo(map);
-  regLayer=L.geoJSON(REG_DATA,{renderer:L.svg({pane:'regPane'}),pane:'regPane',style:REG_STYLE,interactive:false}).addTo(map);
+
+  // ── Départements : contours interactifs ────────────────────────────
+  const depSvg = L.svg({pane:'depPane'});
+  depLayer = L.geoJSON(DEP_DATA,{
+    renderer:depSvg, pane:'depPane',
+    style:{weight:1.5,color:'#e8a030',fill:false},
+    onEachFeature(feat,layer){
+      layer.on('mouseover',()=>layer.setStyle({weight:2.5,color:'#ffd080'}));
+      layer.on('mouseout', ()=>depLayer.resetStyle(layer));
+      layer.on('click',()=>{
+        const p=feat.properties;
+        nav.department=p.nom_officiel;
+        nav.clpe=null;
+        if(!nav.region) nav.region=depToRegName[p.nom_officiel]||null;
+        navLevel='department';
+        document.getElementById('sel-region').value=nav.region||'';
+        repopulateDeps(nav.region);
+        document.getElementById('sel-dep').value=p.nom_officiel;
+        repopulateClpes(nav.region,p.nom_officiel);
+        document.getElementById('sel-clpe').value='';
+        hideExportPanel(); updatePanes(); updateNavBar();
+        zoomToBbox(p.bbox);
+      });
+    }
+  }).addTo(map);
+
+  // ── Régions : contours interactifs ─────────────────────────────────
+  const regSvg = L.svg({pane:'regPane'});
+  regLayer = L.geoJSON(REG_DATA,{
+    renderer:regSvg, pane:'regPane',
+    style:{weight:2.8,color:'#e8c040',fill:false},
+    onEachFeature(feat,layer){
+      layer.on('mouseover',()=>layer.setStyle({weight:4,color:'#ffe870'}));
+      layer.on('mouseout', ()=>regLayer.resetStyle(layer));
+      layer.on('click',()=>{
+        const p=feat.properties;
+        nav.region=p.nom_officiel; nav.department=null; nav.clpe=null;
+        navLevel='region';
+        document.getElementById('sel-region').value=p.nom_officiel;
+        repopulateDeps(p.nom_officiel);
+        repopulateClpes(p.nom_officiel,'');
+        document.getElementById('sel-dep').value='';
+        document.getElementById('sel-clpe').value='';
+        hideExportPanel(); updatePanes(); updateNavBar();
+        zoomToBbox(p.bbox);
+      });
+    }
+  }).addTo(map);
+
   buildLabels();
 }
 
-function buildLabels(){
-  // Coupe en 2 lignes en cherchant la séparation la plus équilibrée (sans couper un mot)
-  function wrapLabel(name){
-    const SEP=/[ -]/;
-    if(name.length<=10)return name;
-    const candidates=[];
-    for(let i=1;i<name.length-1;i++){
-      if(name[i]===' '||name[i]==='-'){
-        const line1=name[i]==='-'?name.slice(0,i+1):name.slice(0,i);
-        const line2=name[i]==='-'?name.slice(i+1):name.slice(i+1);
-        candidates.push({line1,line2,diff:Math.abs(line1.length-line2.length)});
-      }
-    }
-    if(!candidates.length)return name;
-    const best=candidates.reduce((a,b)=>b.diff<a.diff?b:a);
-    return best.line1+'<br>'+best.line2;
-  }
-  // iconSize:[0,0] + position:absolute sur l'inner div = centrage garanti sur le point d'ancrage
-  const mkiCentered=html=>L.divIcon({className:'',html,iconSize:[0,0],iconAnchor:[0,0]});
-  const mki=html=>L.divIcon({className:'',html,iconAnchor:[0,0]});
-  regLabelGroup=L.layerGroup(REG_DATA.features.map(f=>{
+// ─── Étiquettes ───────────────────────────────────────────────────────────
+let regLabelGroup, depLabelGroup;
+function buildLabels() {
+  const mki = html => L.divIcon({className:'',html,iconAnchor:[0,0]});
+  regLabelGroup = L.layerGroup(REG_DATA.features.map(f=>{
     const b=f.properties.bbox;
-    const label=wrapLabel(f.properties.nom_officiel);
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mkiCentered('<div style="position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-size:.84rem;color:#f090d0;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;pointer-events:none;text-align:center;line-height:1.3">'+label+'</div>'),interactive:false});
+    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{
+      icon:mki(`<div style="font-size:.84rem;color:#ffe070;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none">${f.properties.nom_officiel}</div>`),
+      interactive:false
+    });
   }));
-  depLabelGroup=L.layerGroup(DEP_DATA.features.map(f=>{
+  depLabelGroup = L.layerGroup(DEP_DATA.features.map(f=>{
     const b=f.properties.bbox;
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mki('<div style="font-size:.6rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none">'+f.properties.nom_officiel+'</div>'),interactive:false});
+    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{
+      icon:mki(`<div style="font-size:.59rem;color:#f0c060;text-shadow:0 0 4px #000,0 0 8px #000;font-weight:600;white-space:nowrap;pointer-events:none">${f.properties.nom_officiel}</div>`),
+      interactive:false
+    });
   }));
-  clpeLabelGroup=L.layerGroup(CLPE_DATA.features.map(f=>{
-    const b=f.properties.bbox;
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mki('<div class="clpe-label">'+f.properties.CLPE+'</div>'),interactive:false});
-  }));
-  map.on('zoomend',syncLabels);syncLabels();
+  map.on('zoomend',syncLabels);
+  syncLabels();
 }
-
-function syncLabels(){
+function syncLabels() {
   const z=map.getZoom();
-  z<=7?(!map.hasLayer(regLabelGroup)&&regLabelGroup.addTo(map)):(map.hasLayer(regLabelGroup)&&map.removeLayer(regLabelGroup));
-  (z>7&&z<8.5)?(!map.hasLayer(depLabelGroup)&&depLabelGroup.addTo(map)):(map.hasLayer(depLabelGroup)&&map.removeLayer(depLabelGroup));
-  z>=8.5?(!map.hasLayer(clpeLabelGroup)&&clpeLabelGroup.addTo(map)):(map.hasLayer(clpeLabelGroup)&&map.removeLayer(clpeLabelGroup));
+  z<=7 ? (!map.hasLayer(regLabelGroup) && regLabelGroup.addTo(map)) : (map.hasLayer(regLabelGroup) && map.removeLayer(regLabelGroup));
+  z>=7.5 ? (!map.hasLayer(depLabelGroup) && depLabelGroup.addTo(map)) : (map.hasLayer(depLabelGroup) && map.removeLayer(depLabelGroup));
 }
 
-function populateDropdowns(){
+// ─── Dropdowns ───────────────────────────────────────────────────────────
+function populateDropdowns() {
   REG_DATA.features.map(f=>f.properties.nom_officiel).sort().forEach(n=>document.getElementById('sel-region').add(new Option(n,n)));
   allDeps.forEach(n=>document.getElementById('sel-dep').add(new Option(n,n)));
   allClpes.forEach(n=>document.getElementById('sel-clpe').add(new Option(n,n)));
 }
-function repopulateDeps(regName){
-  const sel=document.getElementById('sel-dep'),saved=sel.value;
+function repopulateDeps(regName) {
+  const sel=document.getElementById('sel-dep'), saved=sel.value;
   sel.innerHTML='<option value="">— Tous les départements —</option>';
   const list=regName?(regToDeps[regName]||[]):allDeps;
   list.forEach(n=>sel.add(new Option(n,n)));
-  if(list.includes(saved))sel.value=saved;
+  if(list.includes(saved)) sel.value=saved;
 }
-function repopulateClpes(regName,depName){
-  const sel=document.getElementById('sel-clpe'),saved=sel.value;
+function repopulateClpes(regName,depName) {
+  const sel=document.getElementById('sel-clpe'), saved=sel.value;
   sel.innerHTML='<option value="">— Tous les CLPE —</option>';
   let list;
-  if(depName){list=(depToClpes[depName]||[]).slice();}
-  else if(regName){const seen={};list=[];CLPE_DATA.features.forEach(f=>{if(f.properties.reg===regName&&!seen[f.properties.CLPE]){seen[f.properties.CLPE]=true;list.push(f.properties.CLPE);}});list.sort();}
-  else list=allClpes;
+  if(depName){ list=(depToClpes[depName]||[]).slice(); }
+  else if(regName){ const seen={}; list=[]; CLPE_DATA.features.forEach(f=>{if(f.properties.reg===regName&&!seen[f.properties.CLPE]){seen[f.properties.CLPE]=true;list.push(f.properties.CLPE);}}); list.sort(); }
+  else { list=allClpes; }
   list.forEach(n=>sel.add(new Option(n,n)));
-  if(list.includes(saved))sel.value=saved;
+  if(list.includes(saved)) sel.value=saved;
 }
-function onRegionChange(){
+
+function onRegionChange() {
   const rn=document.getElementById('sel-region').value;
-  nav.region=rn||null;nav.department=null;nav.clpe=null;
-  document.getElementById('sel-dep').value='';document.getElementById('sel-clpe').value='';
-  repopulateDeps(rn);repopulateClpes(rn,'');hideExportPanel();
-  if(!rn){resetView();return;}
-  navLevel='region';updateNavBar();
-  const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);
+  document.getElementById('sel-dep').value='';
+  document.getElementById('sel-clpe').value='';
+  repopulateDeps(rn); repopulateClpes(rn,'');
+  hideExportPanel();
+  if(!rn){ resetView(); return; }
+  nav.region=rn; nav.department=null; nav.clpe=null;
+  navLevel='region'; updatePanes(); updateNavBar();
+  const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);
+  if(f) zoomToBbox(f.properties.bbox);
 }
-function onDepChange(){
+function onDepChange() {
   const rn=document.getElementById('sel-region').value;
   const dn=document.getElementById('sel-dep').value;
-  nav.clpe=null;document.getElementById('sel-clpe').value='';
-  repopulateClpes(rn,dn);hideExportPanel();
-  if(!dn){
-    nav.department=null;nav.region=rn||null;navLevel=rn?'region':'national';updateNavBar();
-    if(rn){const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);}
-    else map.setView([46.5,2.5],6);return;
-  }
-  nav.department=dn;nav.region=rn||depToRegName[dn]||null;navLevel='department';updateNavBar();
-  const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===dn);if(f)zoomToBbox(f.properties.bbox);
+  document.getElementById('sel-clpe').value='';
+  repopulateClpes(rn,dn); hideExportPanel();
+  if(!dn){ nav.department=null; nav.clpe=null; navLevel=rn?'region':'national'; if(rn)nav.region=rn; else nav.region=null; updatePanes(); updateNavBar(); if(rn){const f=REG_DATA.features.find(f=>f.properties.nom_officiel===rn);if(f)zoomToBbox(f.properties.bbox);} return; }
+  nav.department=dn; nav.clpe=null;
+  nav.region = rn || depToRegName[dn] || null;
+  navLevel='department'; updatePanes(); updateNavBar();
+  const f=DEP_DATA.features.find(f=>f.properties.nom_officiel===dn);
+  if(f) zoomToBbox(f.properties.bbox);
 }
-function onClpeChange(){
+function onClpeChange() {
   const cn=document.getElementById('sel-clpe').value;
-  if(!cn){
-    nav.clpe=null;
-    const dn=document.getElementById('sel-dep').value,rn=document.getElementById('sel-region').value;
-    navLevel=dn?'department':rn?'region':'national';hideExportPanel();updateNavBar();return;
-  }
-  const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);if(!feat)return;
+  if(!cn){ nav.clpe=null; const dn=document.getElementById('sel-dep').value, rn=document.getElementById('sel-region').value; navLevel=dn?'department':rn?'region':'national'; hideExportPanel(); updatePanes(); updateNavBar(); return; }
+  const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);
+  if(!feat) return;
   const p=feat.properties;
-  nav.clpe=cn;nav.department=p.dep;nav.region=p.reg;navLevel='clpe';
-  document.getElementById('sel-region').value=nav.region||'';
-  repopulateDeps(nav.region);document.getElementById('sel-dep').value=nav.department||'';
-  repopulateClpes(nav.region,nav.department);document.getElementById('sel-clpe').value=cn;
-  updateNavBar();zoomToBbox(p.bbox);showExportPanel(cn);
+  nav.clpe=cn;
+  if(!nav.department) nav.department=clpeToDep[p.CLPE]||p.dep||'';
+  if(!nav.region)     nav.region=clpeToReg[p.CLPE]||p.reg||'';
+  navLevel='clpe'; updatePanes(); updateNavBar();
+  zoomToBbox(p.bbox);
+  showExportPanel(cn);
 }
 
-let _communes=[];
-function showExportPanel(clpeName){
-  _communes=(comByClpe[clpeName]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
-  document.getElementById('export-clpe-title').textContent='🤝 '+clpeName;
-  document.getElementById('export-count').textContent=_communes.length+' commune'+(_communes.length>1?'s':'');
-  document.getElementById('export-search').value='';renderList(_communes);
+// ─── Export panel ─────────────────────────────────────────────────────────
+let _communes = [];
+function showExportPanel(clpeName) {
+  const raw = CLPE_COMMUNES?.[clpeName] || [];
+  _communes = raw.slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+  document.getElementById('export-clpe-title').textContent = clpeName;
+  document.getElementById('export-count').textContent = _communes.length+' commune'+(_communes.length>1?'s':'');
+  document.getElementById('export-search').value='';
+  renderList(_communes);
   document.getElementById('export-panel').classList.add('open');
 }
-function openCLPEPanel(){if(nav.clpe)showExportPanel(nav.clpe);}
-function renderList(list){
-  document.getElementById('export-list').innerHTML=list.length
-    ?list.map(c=>'<div class="com-item"><span class="com-code">'+c.code+'</span><span class="com-name">'+c.nom+'</span></div>').join('')
-    :'<div style="padding:14px;color:#2a5070;font-size:.73rem;">Aucune commune trouvée.</div>';
+function renderList(list) {
+  document.getElementById('export-list').innerHTML = list.length
+    ? list.map(c=>`<div class="com-item"><span class="com-code">${c.code}</span><span class="com-name">${c.nom}</span></div>`).join('')
+    : '<div style="padding:14px;color:#2a5070;font-size:.73rem;">Aucune commune trouvée.</div>';
 }
-function filterExportList(q){renderList(q?_communes.filter(c=>c.nom.toLowerCase().includes(q.toLowerCase())||c.code.includes(q)):_communes);}
-function hideExportPanel(){document.getElementById('export-panel').classList.remove('open');}
-function exportCSV(){
-  if(!nav.clpe||!_communes.length)return;
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département','Région'],..._communes.map(c=>[c.code,c.nom,c.clpe,c.dep,c.reg])],'communes_CLPE_'+nav.clpe.replace(/[^a-zA-Z0-9\-]/g,'_'));
+function filterExportList(q) {
+  renderList(q ? _communes.filter(c=>c.nom.toLowerCase().includes(q.toLowerCase())||c.code.includes(q)) : _communes);
 }
-function exportRegion(){
-  if(!nav.region)return;
-  const list=(comByReg[nav.region]||[]).slice().sort((a,b)=>a.dep.localeCompare(b.dep,'fr')||a.nom.localeCompare(b.nom,'fr'));
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département'],...list.map(c=>[c.code,c.nom,c.clpe,c.dep])],'communes_region_'+nav.region.replace(/[^a-zA-Z0-9\-]/g,'_'));
-}
-function exportDep(){
-  if(!nav.department)return;
-  const list=(comByDep[nav.department]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département'],...list.map(c=>[c.code,c.nom,c.clpe,c.dep])],'communes_dep_'+nav.department.replace(/[^a-zA-Z0-9\-]/g,'_'));
-}
-function exportNational(){
-  const all=[];Object.values(comByReg).forEach(list=>all.push(...list));
-  all.sort((a,b)=>a.reg.localeCompare(b.reg,'fr')||a.dep.localeCompare(b.dep,'fr')||a.nom.localeCompare(b.nom,'fr'));
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département','Région'],...all.map(c=>[c.code,c.nom,c.clpe,c.dep,c.reg])],'communes_CLPE_France_entiere');
-}
-function downloadCSV(rows,filename){
-  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+function hideExportPanel() { document.getElementById('export-panel').classList.remove('open'); }
+function exportCSV() {
+  if(!nav.clpe||!_communes.length) return;
+  const rows=[['Code INSEE','Commune','CLPE','Département','Région'],..._communes.map(c=>[c.code,c.nom,nav.clpe,nav.department||'',nav.region||''])];
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download=filename+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  a.download='communes_'+nav.clpe.replace(/[^a-zA-Z0-9\-]/g,'_')+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-// ─── Export PNG ─────────────────────────────────────────────────────────────
-function startPNGExport(){
-  const territory=nav.clpe||nav.department||nav.region||'France';
-  exportMapPNG(territory);
+// ─── Zoom utils ───────────────────────────────────────────────────────────
+function zoomToBbox(bbox) {
+  map.fitBounds([[bbox[1],bbox[0]],[bbox[3],bbox[2]]],{padding:[45,45],maxZoom:12});
+}
+function resetView() {
+  nav={region:null,department:null,clpe:null};
+  navLevel='national';
+  document.getElementById('sel-region').value='';
+  document.getElementById('sel-dep').value='';
+  document.getElementById('sel-clpe').value='';
+  repopulateDeps(''); repopulateClpes('','');
+  hideExportPanel(); updatePanes(); updateNavBar();
+  map.setView([46.5,2.5],6);
 }
 
-// Dessiner une géométrie GeoJSON directement depuis les coordonnées lat/lng
-// en convertissant via map.latLngToContainerPoint → alignement parfait avec la carte
-function renderGeomDirect(ctx,geom,yOff,fillStyle,strokeStyle,lineWidth){
-  if(!geom)return;
-  const polys=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
-  ctx.save();
-  if(strokeStyle){ctx.strokeStyle=strokeStyle;ctx.lineWidth=lineWidth||1.5;}
-  if(fillStyle)ctx.fillStyle=fillStyle;
-  polys.forEach(poly=>{
-    ctx.beginPath();
-    poly.forEach(ring=>{
-      let first=true;
-      ring.forEach(c=>{
-        const pt=map.latLngToContainerPoint(L.latLng(c[1],c[0]));
-        const x=pt.x,y=pt.y+(yOff||0);
-        first?(ctx.moveTo(x,y),first=false):ctx.lineTo(x,y);
-      });
-    });
-    ctx.closePath();
-    if(fillStyle)ctx.fill('evenodd');
-    if(strokeStyle)ctx.stroke();
-  });
-  ctx.restore();
-}
-
-// Placement d'étiquette sans chevauchement
-function tryLabel(ctx,text,x,y,font,color,shadow,placed,maxPxW){
-  ctx.save();
-  ctx.font=font;
-  const tw=ctx.measureText(text).width;
-  if(maxPxW&&tw>maxPxW){ctx.restore();return false;}
-  const fSz=parseInt(font)||9;
-  const pad=3;
-  const bx=x-tw/2-pad,by=y-fSz-pad,bw=tw+pad*2,bh=fSz+pad*2;
-  if(placed&&placed.some(r=>!(bx+bw<r.x||bx>r.x+r.w||by+bh<r.y||by>r.y+r.h))){ctx.restore();return false;}
-  if(placed)placed.push({x:bx,y:by,w:bw,h:bh});
-  ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=shadow||6;
-  ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(text,x,y);
-  ctx.restore();
-  return true;
-}
-
-async function exportMapPNG(territory){
-  const btn=document.getElementById('btn-exp-png');
-  const origText=btn.textContent;btn.textContent='⏳ Génération…';btn.disabled=true;
-  try{
-    const mapEl=document.getElementById('map');
-    const rect=mapEl.getBoundingClientRect();
-    const W=Math.round(rect.width),H=Math.round(rect.height);
-    const dpr=Math.min(window.devicePixelRatio||1,2);
-    const HEADER=52,FOOTER=24;
-
-    const level=nav.clpe?'clpe':nav.department?'department':nav.region?'region':'national';
-    const showComList=(level==='clpe');
-    const LIST_COL=showComList?250:0;
-    const listCommunes=showComList?(comByClpe[nav.clpe]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr')):[];
-    const TOTAL_W=W+LIST_COL;
-    const TOTAL_H=H+HEADER+FOOTER;
-
-    const merged=document.createElement('canvas');
-    merged.width=TOTAL_W*dpr;merged.height=TOTAL_H*dpr;
-    const ctx=merged.getContext('2d');ctx.scale(dpr,dpr);
-
-    // Fond
-    ctx.fillStyle='#0c1825';ctx.fillRect(0,0,TOTAL_W,TOTAL_H);
-
-    // Zone carte : clip
-    ctx.save();
-    ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
-
-    // ── Tuiles (best-effort CORS)
-    const imgs=Array.from(mapEl.querySelectorAll('.leaflet-tile-pane img'));
-    for(const img of imgs){
-      if(!img.complete||img.naturalWidth===0)continue;
-      try{
-        const r=img.getBoundingClientRect();
-        ctx.globalAlpha=parseFloat(img.style.opacity)||0.55;
-        ctx.drawImage(img,r.left-rect.left,r.top-rect.top+HEADER,r.width,r.height);
-      }catch(e){}
-    }
-    ctx.globalAlpha=1;
-
-    // ── Canvas Leaflet (CLPE fills + contours communes) — alignement natif
-    const canvases=Array.from(mapEl.querySelectorAll('canvas'));
-    for(const c of canvases){
-      try{
-        const r=c.getBoundingClientRect();
-        ctx.drawImage(c,r.left-rect.left,r.top-rect.top+HEADER,r.width,r.height);
-      }catch(e){}
-    }
-    ctx.restore(); // fin clip
-
-    // ── Contours vectoriels redessines depuis GeoJSON (alignement parfait)
-    const yOff=HEADER;
-
-    if(level==='national'){
-      // Contours régions seulement
-      REG_DATA.features.forEach(f=>renderGeomDirect(ctx,f.geometry,yOff,null,'#e879b0',2.5));
-    }
-    if(level==='region'){
-      // Contours dep + contour région
-      const regName=nav.region;
-      DEP_DATA.features.forEach(f=>{
-        if(depToRegName[f.properties.nom_officiel]!==regName)return;
-        renderGeomDirect(ctx,f.geometry,yOff,null,'#e8a030',2.0);
-      });
-      // Contour de la région par-dessus
-      const rFeat=REG_DATA.features.find(f=>f.properties.nom_officiel===regName);
-      if(rFeat)renderGeomDirect(ctx,rFeat.geometry,yOff,null,'#e879b0',3.0);
-    }
-    if(level==='department'){
-      // Contours CLPE du département + contour dep
-      const depName=nav.department;
-      CLPE_DATA.features.forEach(f=>{
-        if(f.properties.dep!==depName)return;
-        renderGeomDirect(ctx,f.geometry,yOff,null,'rgba(120,200,240,0.7)',1.5);
-      });
-      const dFeat=DEP_DATA.features.find(f=>f.properties.nom_officiel===depName);
-      if(dFeat)renderGeomDirect(ctx,dFeat.geometry,yOff,null,'#e8a030',2.5);
-    }
-    if(level==='clpe'){
-      // Contour du CLPE surligné
-      const cFeat=CLPE_DATA.features.find(f=>f.properties.CLPE===nav.clpe);
-      if(cFeat)renderGeomDirect(ctx,cFeat.geometry,yOff,null,'#7ec8f4',2.5);
-    }
-
-    // ── Étiquettes (anti-chevauchement)
-    const placed=[];
-    const inMap=(x,y)=>x>=4&&x<=W-4&&y>=HEADER+4&&y<=HEADER+H-4;
-    const bboxPx=(bbox)=>{
-      const pt=map.latLngToContainerPoint(L.latLng((bbox[1]+bbox[3])/2,(bbox[0]+bbox[2])/2));
-      return {x:pt.x,y:pt.y+HEADER};
-    };
-    // Découpe équilibrée en 2 lignes pour le canvas (retourne un tableau)
-    function splitLabel(name){
-      if(name.length<=10)return[name];
-      const candidates=[];
-      for(let i=1;i<name.length-1;i++){
-        if(name[i]===' '||name[i]==='-'){
-          const l1=name[i]==='-'?name.slice(0,i+1):name.slice(0,i);
-          const l2=name[i]==='-'?name.slice(i+1):name.slice(i+1);
-          candidates.push({l1,l2,diff:Math.abs(l1.length-l2.length)});
-        }
-      }
-      if(!candidates.length)return[name];
-      const b=candidates.reduce((a,c)=>c.diff<a.diff?c:a);
-      return[b.l1,b.l2];
-    }
-    // Placement multi-ligne centré avec anti-chevauchement
-    function tryLabelLines(ctx,lines,x,y,font,color,shadow,placed){
-      ctx.save();ctx.font=font;
-      const fSz=parseInt(font)||9;
-      const lineH=fSz*1.3;
-      const maxW=Math.max(...lines.map(l=>ctx.measureText(l).width));
-      const totalH=lines.length*lineH;
-      const pad=3;
-      const bx=x-maxW/2-pad,by=y-totalH/2-pad,bw=maxW+pad*2,bh=totalH+pad*2;
-      if(placed&&placed.some(r=>!(bx+bw<r.x||bx>r.x+r.w||by+bh<r.y||by>r.y+r.h))){ctx.restore();return false;}
-      if(placed)placed.push({x:bx,y:by,w:bw,h:bh});
-      ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=shadow||6;
-      ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
-      const startY=y-((lines.length-1)*lineH)/2;
-      lines.forEach((line,i)=>ctx.fillText(line,x,startY+i*lineH));
-      ctx.restore();return true;
-    }
-
-    if(level==='national'){
-      REG_DATA.features.forEach(f=>{
-        const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
-        tryLabelLines(ctx,splitLabel(f.properties.nom_officiel),c.x,c.y,'bold 11px "Segoe UI",Arial,sans-serif','#f090d0',8,placed);
-      });
-    }
-    if(level==='region'){
-      const regName=nav.region;
-      // 1. Étiquettes départements
-      DEP_DATA.features.forEach(f=>{
-        if(depToRegName[f.properties.nom_officiel]!==regName)return;
-        const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
-        tryLabel(ctx,f.properties.nom_officiel,c.x,c.y,'bold 10px "Segoe UI",Arial,sans-serif','#f5b84a',7,placed,null);
-      });
-      // 2. Étiquettes CLPE (plus petites, sous les dep)
-      CLPE_DATA.features.forEach(f=>{
-        if(f.properties.reg!==regName)return;
-        const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
-        tryLabel(ctx,f.properties.CLPE,c.x,c.y,'8px "Segoe UI",Arial,sans-serif','#90d0f8',5,placed,110);
-      });
-    }
-    if(level==='department'){
-      const depName=nav.department;
-      // Étiquettes CLPE du département
-      CLPE_DATA.features.forEach(f=>{
-        if(f.properties.dep!==depName)return;
-        const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
-        tryLabel(ctx,f.properties.CLPE,c.x,c.y,'bold 10px "Segoe UI",Arial,sans-serif','#90d0f8',7,placed,null);
-      });
-    }
-    if(level==='clpe'){
-      // ── Étiquettes des CLPE voisins (visibles dans la vue, hors CLPE courant)
-      CLPE_DATA.features.forEach(f=>{
-        if(f.properties.CLPE===nav.clpe)return;
-        const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
-        tryLabel(ctx,f.properties.CLPE,c.x,c.y,'italic 8px "Segoe UI",Arial,sans-serif','rgba(144,208,248,0.55)',4,placed,null);
-      });
-      // ── Top 10 communes par surface (centroïde pondéré par aire)
-      const centMap={};COM_CENTROIDS.forEach(c=>centMap[c.name]={x:c.x,y:c.y,area:c.area||0});
-      const clpeCommunes=(comByClpe[nav.clpe]||[]).slice();
-      // Trier par aire décroissante pour avoir les 10 communes les plus grandes
-      clpeCommunes.sort((a,b)=>(centMap[b.nom]?centMap[b.nom].area:0)-(centMap[a.nom]?centMap[a.nom].area:0));
-      const top10=clpeCommunes.slice(0,10);
-      top10.forEach(com=>{
-        const ctr=centMap[com.nom];if(!ctr)return;
-        const pt=map.latLngToContainerPoint(L.latLng(ctr.y,ctr.x));
-        const x=pt.x,y=pt.y+HEADER;
-        if(!inMap(x,y))return;
-        tryLabel(ctx,com.nom,x,y,'bold 8.5px "Segoe UI",Arial,sans-serif','#e8f4ff',6,placed,null);
-      });
-    }
-
-    // ── En-tête
-    ctx.fillStyle='rgba(6,18,32,0.96)';ctx.fillRect(0,0,TOTAL_W,HEADER);
-    ctx.strokeStyle='#1e4060';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(0,HEADER);ctx.lineTo(TOTAL_W,HEADER);ctx.stroke();
-    const levelLabel={'national':'Vue nationale — France entière','region':'Région','department':'Département','clpe':'Comité Local Pour l\'Emploi'}[level];
-    const titleText=level==='national'?'Comités Locaux Pour l\'Emploi':territory;
-    ctx.save();ctx.shadowColor='#000';ctx.shadowBlur=6;
-    ctx.font='bold 15px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#7ec8f4';ctx.textAlign='left';ctx.textBaseline='alphabetic';
-    ctx.fillText(titleText,14,24);
-    ctx.font='10px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#4a7a9a';
-    ctx.fillText(level==='national'?levelLabel:levelLabel+' · Comités Locaux Pour l\'Emploi — France',14,42);
-    ctx.restore();
-
-    // ── Colonne communes (CLPE uniquement)
-    if(showComList&&listCommunes.length){
-      ctx.fillStyle='rgba(4,12,22,0.97)';ctx.fillRect(W,0,LIST_COL,TOTAL_H);
-      ctx.strokeStyle='#1a3550';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(W,0);ctx.lineTo(W,TOTAL_H);ctx.stroke();
-      // Titre colonne
-      ctx.fillStyle='rgba(10,30,50,0.95)';ctx.fillRect(W,0,LIST_COL,HEADER);
-      ctx.beginPath();ctx.moveTo(W,HEADER);ctx.lineTo(W+LIST_COL,HEADER);ctx.stroke();
-      ctx.font='bold 9px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#4a7a9a';
-      ctx.textAlign='left';ctx.textBaseline='alphabetic';
-      ctx.fillText('COMMUNES ('+listCommunes.length+')',W+10,HEADER-10);
-      // Éléments
-      const lineH=15,startY=HEADER+13;
-      const maxPerCol=Math.floor((H-10)/lineH);
-      const cols=listCommunes.length>maxPerCol?2:1;
-      const colW=Math.floor((LIST_COL-16)/cols);
-      const perCol=Math.ceil(listCommunes.length/cols);
-      listCommunes.slice(0,perCol*cols).forEach((com,i)=>{
-        const col=Math.floor(i/perCol);
-        const row=i%perCol;
-        const x=W+8+col*colW;
-        const y=startY+row*lineH;
-        if(y>HEADER+H-6)return;
-        ctx.font='7px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#2e5878';
-        ctx.textAlign='left';ctx.fillText(com.code,x,y);
-        ctx.fillStyle='#9ac8e4';
-        ctx.font='7.5px "Segoe UI",Arial,sans-serif';
-        let nom=com.nom;
-        const maxW=colW-36;
-        while(ctx.measureText(nom).width>maxW&&nom.length>3)nom=nom.slice(0,-1);
-        if(nom!==com.nom)nom=nom.slice(0,-1)+'…';
-        ctx.fillText(nom,x+34,y);
-      });
-      if(listCommunes.length>perCol*cols){
-        ctx.font='italic 7.5px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#2a4d60';
-        ctx.fillText('+'+(listCommunes.length-perCol*cols)+' autres…',W+8,HEADER+H-6);
-      }
-    }
-
-    // ── Pied de page
-    ctx.fillStyle='rgba(4,10,20,0.93)';ctx.fillRect(0,TOTAL_H-FOOTER,TOTAL_W,FOOTER);
-    ctx.strokeStyle='#0e2030';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(0,TOTAL_H-FOOTER);ctx.lineTo(TOTAL_W,TOTAL_H-FOOTER);ctx.stroke();
-    ctx.font='8px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#2a4d60';ctx.textAlign='left';ctx.textBaseline='middle';
-    const dateStr=new Date().toLocaleDateString('fr-FR',{year:'numeric',month:'long',day:'numeric'});
-    ctx.fillText('© OpenStreetMap contributors · CARTO · Export du '+dateStr,10,TOTAL_H-FOOTER/2);
-
-    // ── Téléchargement
-    merged.toBlob(blob=>{
-      const url=URL.createObjectURL(blob);const a=document.createElement('a');
-      a.href=url;a.download='carte_CLPE_'+territory.replace(/[^a-zA-Z0-9\-]/g,'_')+'.png';
-      document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-    },'image/png');
-
-  }catch(e){console.error('PNG export error:',e);alert('Erreur lors de l\'export PNG : '+e.message);}
-  finally{btn.textContent=origText;btn.disabled=false;}
-}
-
-function zoomToBbox(bbox){map.fitBounds([[bbox[1],bbox[0]],[bbox[3],bbox[2]]],{padding:[45,45],maxZoom:12});}
-function resetView(){
-  nav={region:null,department:null,clpe:null};navLevel='national';
-  document.getElementById('sel-region').value='';document.getElementById('sel-dep').value='';document.getElementById('sel-clpe').value='';
-  repopulateDeps('');repopulateClpes('','');hideExportPanel();updateNavBar();map.setView([46.5,2.5],6);
-}
-loadAll().catch(e=>{status.textContent='Erreur : '+e.message;bar.style.background='#c0392b';console.error(e);});
+// ─── Démarrage ────────────────────────────────────────────────────────────
+loadAll().catch(e=>{ status.textContent='Erreur : '+e.message; bar.style.background='#c0392b'; console.error(e); });
 </script>
 </body>
 </html>
