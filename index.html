@@ -336,11 +336,16 @@ function buildCascading(){
     if(!regToDeps[regName])regToDeps[regName]=[];
     regToDeps[regName].push(dep);
   });
-  CLPE_DATA.features.forEach(f=>{
-    const dep=f.properties.dep||'';
-    if(!depToClpes[dep])depToClpes[dep]=[];
-    depToClpes[dep].push(f.properties.CLPE);
+  // Un CLPE multi-dep apparaît dans TOUS ses départements (basé sur les communes réelles)
+  const _clpeInDeps={};
+  COM_DATA.features.forEach(f=>{
+    const clpeName=f.properties.clpe||'';if(!clpeName)return;
+    const dc=depCodeFromInsee(f.properties.code);
+    const dn=depCodeToName[dc]||'';if(!dn)return;
+    if(!_clpeInDeps[dn])_clpeInDeps[dn]=new Set();
+    _clpeInDeps[dn].add(clpeName);
   });
+  Object.entries(_clpeInDeps).forEach(([dn,s])=>{depToClpes[dn]=Array.from(s).sort();});
   Object.values(regToDeps).forEach(a=>a.sort());
   Object.values(depToClpes).forEach(a=>a.sort());
   allDeps=DEP_DATA.features.map(f=>f.properties.nom_officiel).sort();
@@ -511,7 +516,21 @@ function onClpeChange(){
   }
   const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);if(!feat)return;
   const p=feat.properties;
-  nav.clpe=cn;nav.department=p.dep;nav.region=p.reg;navLevel='clpe';
+  // Dériver dep/reg depuis les communes réelles du CLPE (dep majoritaire via code INSEE)
+  const _depCounts={};
+  (comByClpe[cn]||[]).forEach(c=>{
+    const dc=depCodeFromInsee(c.code);
+    const dn=depCodeToName[dc]||'';
+    if(dn)_depCounts[dn]=(_depCounts[dn]||0)+1;
+  });
+  const _topDep=Object.entries(_depCounts).sort((a,b)=>b[1]-a[1])[0];
+  let _depName=p.dep,_regName=p.reg;
+  if(_topDep){
+    _depName=_topDep[0];
+    const _dc=Object.keys(depCodeToName).find(k=>depCodeToName[k]===_depName)||'';
+    _regName=depCodeToRegName[_dc]||_regName;
+  }
+  nav.clpe=cn;nav.department=_depName;nav.region=_regName;navLevel='clpe';
   document.getElementById('sel-region').value=nav.region||'';
   repopulateDeps(nav.region);document.getElementById('sel-dep').value=nav.department||'';
   repopulateClpes(nav.region,nav.department);document.getElementById('sel-clpe').value=cn;
