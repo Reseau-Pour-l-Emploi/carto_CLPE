@@ -1,6 +1,6 @@
-# Carte des Comités Locaux pour l'Emploi — France
+# Carte des Comités Locaux Pour l'Emploi — France
 
-Carte interactive des 362 Comités Locaux pour l'Emploi (CLPE), regroupements de communes sur le territoire français.
+Carte interactive des 362 Comités Locaux Pour l'Emploi (CLPE), regroupements de communes sur le territoire français.
 
 ## 🚀 Hébergement sur GitHub Pages
 
