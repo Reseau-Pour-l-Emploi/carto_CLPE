@@ -311,13 +311,13 @@ function buildCentroids(){
     if(!ring||ring.length<2)return;
     let sx=0,sy=0,n=ring.length-1;if(n<1)return;
     for(let i=0;i<n;i++){sx+=ring[i][0];sy+=ring[i][1];}
-    COM_CENTROIDS.push({name:feat.properties.nom,x:sx/n,y:sy/n});
+    COM_CENTROIDS.push({name:feat.properties.nom,code:feat.properties.code,x:sx/n,y:sy/n});
   });
 }
 function nearestCommune(lng,lat){
   let best=null,bd=Infinity;
   for(const c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
-  return best?best.name:null;
+  return best?{name:best.name,code:best.code}:null;
 }
 function buildCascading(){
   const rcn={};
@@ -384,10 +384,18 @@ async function addWorldMask(){
 }
 
 const tooltip=L.tooltip({className:'tooltip-clpe',permanent:false,direction:'top',offset:[0,-10]});
-function ttHTML(p,com){
-  return '<span class="tt-region">📍 '+(p.reg||'—')+'</span>'
-        +'<span class="tt-dep">🏛 '+(p.dep||'—')+'</span>'
-        +(com?'<span class="tt-com">🏘 '+com+'</span>':'')
+function ttHTML(p,comObj){
+  // Dériver dep et région depuis le code INSEE de la commune survolée
+  // (pas depuis les propriétés du CLPE qui peut chevaucher plusieurs deps)
+  let depName=p.dep||'—', regName=p.reg||'—';
+  if(comObj&&comObj.code){
+    const dc=depCodeFromInsee(comObj.code);
+    depName=depCodeToName[dc]||depName;
+    regName=depCodeToRegName[dc]||regName;
+  }
+  return '<span class="tt-region">📍 '+regName+'</span>'
+        +'<span class="tt-dep">🏛 '+depName+'</span>'
+        +(comObj?'<span class="tt-com">🏘 '+comObj.name+'</span>':'')
         +'<span class="tt-clpe">🤝 '+(p.CLPE||'—')+'</span>';
 }
 
