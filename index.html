@@ -271,21 +271,31 @@ function updateExportBar(){
 let REG_DATA,DEP_DATA,CLPE_DATA,COM_DATA;
 let allDeps=[],allClpes=[];
 let regToDeps={},depToClpes={},depToRegName={};
-let depCodeToName={},regCodeToName={};
+let depCodeToName={},regCodeToName={},depCodeToRegName={};
 let COM_CENTROIDS=[];
 let comByClpe={},comByDep={},comByReg={};
 
+// Dérivation du code département depuis le code commune INSEE
+// (2 premiers caractères sauf DOM 97x → 3 caractères)
+function depCodeFromInsee(code){return code.startsWith('97')?code.slice(0,3):code.slice(0,2);}
+
 function buildLookups(){
-  // Utiliser les données COMPLÈTES (non filtrées) pour résoudre tous les codes communes
-  DEP_FULL.features.forEach(f=>{depCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
+  // Tables complètes depuis dep/reg FULL (non filtrés)
   REG_FULL.features.forEach(f=>{regCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
+  DEP_FULL.features.forEach(f=>{
+    const dc=f.properties.code_insee;
+    depCodeToName[dc]=f.properties.nom_officiel;
+    depCodeToRegName[dc]=regCodeToName[f.properties.code_insee_de_la_region||'']||'';
+  });
 }
 function buildComLists(){
   comByClpe={};comByDep={};comByReg={};
   COM_DATA.features.forEach(f=>{
     const p=f.properties;
-    const depName=depCodeToName[p.dep]||p.dep||'';
-    const regName=regCodeToName[p.reg]||p.reg||'';
+    // Département et région dérivés UNIQUEMENT des 2 (ou 3 pour DOM) premiers caractères du code INSEE
+    const dc=depCodeFromInsee(p.code);
+    const depName=depCodeToName[dc]||'';
+    const regName=depCodeToRegName[dc]||'';
     const clpeName=p.clpe||'';
     const rec={code:p.code,nom:p.nom,clpe:clpeName,dep:depName,reg:regName};
     if(clpeName){if(!comByClpe[clpeName])comByClpe[clpeName]=[];comByClpe[clpeName].push(rec);}
