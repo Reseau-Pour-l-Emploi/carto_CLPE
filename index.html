@@ -365,7 +365,18 @@ async function loadAll(){
   DEP_FULL=depRaw;
   DEP_DATA={...depRaw,features:depRaw.features.filter(f=>!DEPS_NO_CLPE.has(f.properties.nom_officiel))};
   setProgress(25,'Chargement des comités locaux…');
-  CLPE_DATA=await fetch('data/clpe.json').then(r=>r.json());
+  CLPE_DATA=await fetch('data/CLPE.geojson').then(r=>r.json()).then(geojson=>{
+    geojson.features=geojson.features.map((f,i)=>{
+      const props=f.properties||{};
+      const clpeName=props['Libellé Comité Local Pour l-Emploi']||props['CLPE']||props['nom']||'';
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      function processCoords(c){if(typeof c[0]==='number'){if(c[0]<minX)minX=c[0];if(c[0]>maxX)maxX=c[0];if(c[1]<minY)minY=c[1];if(c[1]>maxY)maxY=c[1];}else c.forEach(processCoords);}
+      if(f.geometry&&f.geometry.coordinates)processCoords(f.geometry.coordinates);
+      f.properties={...props,CLPE:clpeName,bbox:[minX,minY,maxX,maxY],color_idx:i,dep:'',reg:''};
+      return f;
+    });
+    return geojson;
+  });
   setProgress(36,'Chargement des communes (incluant DOM)…');
   COM_DATA=await fetch('data/commune.geojson').then(r=>r.json());
   setProgress(72,'Construction des index…');
