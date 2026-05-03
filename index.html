@@ -585,9 +585,10 @@ function buildLayers(){
 
 function buildLabels(){
   const mki=html=>L.divIcon({className:'',html,iconAnchor:[0,0]});
+  const mkiCentered=html=>L.divIcon({className:'',html,iconSize:[0,0],iconAnchor:[0,0]});
   regLabelGroup=L.layerGroup(REG_DATA.features.map(f=>{
     const b=f.properties.bbox;
-    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mki('<div style="font-size:.84rem;color:#f090d0;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none;transform:translateX(-50%)">'+f.properties.nom_officiel+'</div>'),interactive:false});
+    return L.marker([(b[1]+b[3])/2,(b[0]+b[2])/2],{icon:mkiCentered('<div style="font-size:.84rem;color:#f090d0;text-shadow:0 0 5px #000,0 0 10px #000;font-weight:700;white-space:nowrap;pointer-events:none;position:absolute;transform:translate(-50%,-50%)">'+f.properties.nom_officiel+'</div>'),interactive:false});
   }));
   depLabelGroup=L.layerGroup(DEP_DATA.features.map(f=>{
     const b=f.properties.bbox;
