@@ -191,8 +191,10 @@ const CLPE_HOVER =p=>({weight:2.5,color:'#7ec8f4',fillColor:clpeColor(p.color_id
 const DEP_STYLE={weight:2.0,color:'#e8a030',fill:false};
 const REG_STYLE={weight:3.0,color:'#e879b0',fill:false};  // rose/pink
 
-const REGS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
-const DEPS_NO_CLPE=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
+const REGS_NO_CLPE=new Set([]);
+const DEPS_NO_CLPE=new Set([]);
+// Collectivités à traitement unifié : tous les niveaux portent le nom de l'île
+const ISLANDS_SPECIAL=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
 
 const bar=document.getElementById('loading-bar');
 const status=document.getElementById('loading-status');
@@ -307,6 +309,8 @@ function buildComLists(){
       if(nom==='Saint-Barthélemy'){depName='Saint-Barthélemy';regName='Saint-Barthélemy';clpeName='Saint-Barthélemy';}
       else if(nom==='Saint-Martin'){depName='Saint-Martin';regName='Saint-Martin';clpeName='Saint-Martin';}
     }
+    // Saint-Pierre-et-Miquelon (codes INSEE 975xx)
+    if(code.startsWith('975')){depName='Saint-Pierre-et-Miquelon';regName='Saint-Pierre-et-Miquelon';clpeName='Saint-Pierre-et-Miquelon';}
     const pop=+(p.population||0);
     // superficie_cadastrale est en hectares → diviser par 100 pour obtenir km²
     const sup=+(p.superficie_cadastrale||p.superficie||0)/100;
@@ -335,6 +339,7 @@ function buildCentroids(){
       if(nom==='Saint-Barthélemy')clpe='Saint-Barthélemy';
       else if(nom==='Saint-Martin')clpe='Saint-Martin';
     }
+    if(code.startsWith('975'))clpe='Saint-Pierre-et-Miquelon';
     COM_CENTROIDS.push({name:nom,code,x:sx/n,y:sy/n,pop,sup,clpe});
   });
 }
@@ -378,6 +383,14 @@ function buildCascading(){
   Object.entries(_clpeInDeps).forEach(([dn,s])=>{depToClpes[dn]=Array.from(s).sort();});
   Object.values(regToDeps).forEach(a=>a.sort());
   Object.values(depToClpes).forEach(a=>a.sort());
+  // Garantir les mappings pour les îles à traitement unifié
+  ISLANDS_SPECIAL.forEach(name=>{
+    depToRegName[name]=name;
+    if(!regToDeps[name])regToDeps[name]=[];
+    if(!regToDeps[name].includes(name))regToDeps[name].push(name);
+    if(!depToClpes[name])depToClpes[name]=[];
+    if(!depToClpes[name].includes(name))depToClpes[name].push(name);
+  });
   allDeps=DEP_DATA.features.map(f=>f.properties.nom_officiel).sort();
   allClpes=[...new Set(CLPE_DATA.features.map(f=>f.properties.CLPE))].sort();
 }
@@ -416,6 +429,14 @@ function buildEpciLookup(){
     const code=p.code_insee||p['Code Commune Insee']||'';
     const siren=p.codes_siren_des_epci||p.siren_epci||'';
     if(siren&&sirenToName[siren])comCodeToEpci[code]=sirenToName[siren];
+  });
+  // Forcer l'EPCI des îles à traitement unifié
+  COM_DATA.features.forEach(f=>{
+    const p=f.properties||{};
+    const code=p.code_insee||p['Code Commune Insee']||'';
+    const nom=p.nom_officiel||p.nom||'';
+    if(code==='NR'&&(nom==='Saint-Barthélemy'||nom==='Saint-Martin'))comCodeToEpci[code+'_'+nom]=nom;
+    if(code.startsWith('975'))comCodeToEpci[code]='Saint-Pierre-et-Miquelon';
   });
 }
 
@@ -458,16 +479,22 @@ async function loadAll(){
     });
     return geojson;
   });
-  // Supprimer les CLPE de Saint-Pierre-et-Miquelon (territoire sans CLPE — inset proche de Mayotte)
-  CLPE_DATA={...CLPE_DATA,features:CLPE_DATA.features.filter(f=>!REGS_NO_CLPE.has(f.properties.CLPE))};
+  // Injecter des CLPE synthétiques pour les îles spéciales (si absentes du GeoJSON)
+  const _existingClpe=new Set(CLPE_DATA.features.map(f=>f.properties.CLPE));
+  ISLANDS_SPECIAL.forEach(name=>{
+    if(!_existingClpe.has(name)){
+      const depFeat=DEP_FULL.features.find(f=>f.properties.nom_officiel===name);
+      if(depFeat){
+        const bbox=depFeat.properties.bbox||[0,0,0,0];
+        CLPE_DATA.features.push({type:'Feature',geometry:depFeat.geometry,
+          properties:{CLPE:name,bbox,color_idx:CLPE_DATA.features.length,dep:name,reg:name}});
+      }
+    }
+  });
   setProgress(36,'Chargement des communes (incluant DOM)…');
   COM_DATA=await fetch('data/commune.geojson').then(r=>r.json());
-  // Supprimer complètement Saint-Pierre-et-Miquelon (codes INSEE 975xx)
-  COM_DATA={...COM_DATA,features:COM_DATA.features.filter(f=>{const c=f.properties.code_insee||'';return!c.startsWith('975');})};
   setProgress(55,'Chargement des EPCI…');
   EPCI_DATA=await fetch('data/epci.geojson').then(r=>r.json()).catch(()=>{console.warn('epci.geojson non disponible');return null;});
-  // Supprimer l'EPCI de Saint-Pierre-et-Miquelon
-  if(EPCI_DATA)EPCI_DATA={...EPCI_DATA,features:EPCI_DATA.features.filter(f=>(f.properties.nom_officiel||'')!=='Saint-Pierre-et-Miquelon')};
   setProgress(72,'Construction des index…');
   buildLookups();buildComLists();buildCentroids();buildCascading();buildEpciLookup();
   setProgress(82,'Masque mondial…');
@@ -497,13 +524,20 @@ function ttHTML(p,comObj){
       // Collectivités sui generis : code partagé 'NR' — résolution par nom de commune
       const _forced={'Saint-Barthélemy':'Saint-Barthélemy','Saint-Martin':'Saint-Martin'}[comObj.name];
       if(_forced){depName=_forced;regName=_forced;}
+    }else if(comObj.code.startsWith('975')){
+      // Saint-Pierre-et-Miquelon
+      depName='Saint-Pierre-et-Miquelon';regName='Saint-Pierre-et-Miquelon';
     }else{
       const dc=depCodeFromInsee(comObj.code);
       depName=depCodeToName[dc]||depName;
       regName=depCodeToRegName[dc]||regName;
     }
   }
-  const epciName=comObj?(comObj.code==='NR'?({'Saint-Barthélemy':'Saint-Barthélemy','Saint-Martin':'Saint-Martin'}[comObj.name]||null):comCodeToEpci[comObj.code]||null):null;
+  const epciName=comObj?(
+    comObj.code==='NR'?({'Saint-Barthélemy':'Saint-Barthélemy','Saint-Martin':'Saint-Martin'}[comObj.name]||null):
+    comObj.code.startsWith('975')?'Saint-Pierre-et-Miquelon':
+    comCodeToEpci[comObj.code]||null
+  ):null;
   const pop=comObj&&comObj.pop>0?comObj.pop.toLocaleString('fr-FR')+' hab.':null;
   const sup=comObj&&comObj.sup>0?comObj.sup.toLocaleString('fr-FR',{maximumFractionDigits:1})+' km²':null;
   return '<span class="tt-region">📍 '+regName+'</span>'
