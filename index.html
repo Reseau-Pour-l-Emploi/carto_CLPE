@@ -329,12 +329,24 @@ function buildCentroids(){
     const nom=p.nom_officiel||p.nom||'';
     const pop=+(p.population||0);
     const sup=+(p.superficie_cadastrale||p.superficie||0)/100; // ha → km²
-    COM_CENTROIDS.push({name:nom,code,x:sx/n,y:sy/n,pop,sup});
+    // Clé CLPE : brute depuis le GeoJSON + forçage collectivités sui generis
+    let clpe=p['Libellé Comité Local Pour l-Emploi']||p.clpe||'';
+    if(code==='NR'){
+      if(nom==='Saint-Barthélemy')clpe='Saint-Barthélemy';
+      else if(nom==='Saint-Martin')clpe='Saint-Martin';
+    }
+    COM_CENTROIDS.push({name:nom,code,x:sx/n,y:sy/n,pop,sup,clpe});
   });
 }
-function nearestCommune(lng,lat){
+function nearestCommune(lng,lat,clpeName){
+  // Restreindre aux communes du CLPE survolé pour éviter les faux positifs inter-territoires.
+  // IMPORTANT : ne pas faire de fallback sur COM_CENTROIDS complet — les insets DOM/SPM
+  // sont proches en coordonnées planes (ex. SPM ≈ (-1,41.5), Mayotte ≈ (0,41.7)) et le
+  // fallback ramènerait des communes d'un territoire voisin au lieu de null.
+  const pool=clpeName?COM_CENTROIDS.filter(c=>c.clpe===clpeName):COM_CENTROIDS;
+  if(!pool.length)return null; // CLPE sans communes connues → pas de résultat plutôt qu'un faux positif
   let best=null,bd=Infinity;
-  for(const c of COM_CENTROIDS){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
+  for(const c of pool){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
   return best?{name:best.name,code:best.code,pop:best.pop,sup:best.sup}:null;
 }
 function buildCascading(){
@@ -446,6 +458,8 @@ async function loadAll(){
     });
     return geojson;
   });
+  // Supprimer les CLPE de Saint-Pierre-et-Miquelon (territoire sans CLPE — inset proche de Mayotte)
+  CLPE_DATA={...CLPE_DATA,features:CLPE_DATA.features.filter(f=>!REGS_NO_CLPE.has(f.properties.CLPE))};
   setProgress(36,'Chargement des communes (incluant DOM)…');
   COM_DATA=await fetch('data/commune.geojson').then(r=>r.json());
   // Supprimer complètement Saint-Pierre-et-Miquelon (codes INSEE 975xx)
@@ -479,9 +493,15 @@ function ttHTML(p,comObj){
   // Dériver dep et région depuis le code INSEE de la commune survolée
   let depName=p.dep||'—', regName=p.reg||'—';
   if(comObj&&comObj.code){
-    const dc=depCodeFromInsee(comObj.code);
-    depName=depCodeToName[dc]||depName;
-    regName=depCodeToRegName[dc]||regName;
+    if(comObj.code==='NR'){
+      // Collectivités sui generis : code partagé 'NR' — résolution par nom de commune
+      const _forced={'Saint-Barthélemy':'Saint-Barthélemy','Saint-Martin':'Saint-Martin'}[comObj.name];
+      if(_forced){depName=_forced;regName=_forced;}
+    }else{
+      const dc=depCodeFromInsee(comObj.code);
+      depName=depCodeToName[dc]||depName;
+      regName=depCodeToRegName[dc]||regName;
+    }
   }
   const epciName=comObj?(comObj.code==='NR'?({'Saint-Barthélemy':'Saint-Barthélemy','Saint-Martin':'Saint-Martin'}[comObj.name]||null):comCodeToEpci[comObj.code]||null):null;
   const pop=comObj&&comObj.pop>0?comObj.pop.toLocaleString('fr-FR')+' hab.':null;
@@ -512,8 +532,8 @@ function buildLayers(){
     style:feat=>CLPE_NORMAL(feat.properties),
     onEachFeature(feat,layer){
       const p=feat.properties;
-      layer.on('mouseover',e=>{layer.setStyle(CLPE_HOVER(p));tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat))).addTo(map);});
-      layer.on('mousemove',e=>{tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat)));});
+      layer.on('mouseover',e=>{layer.setStyle(CLPE_HOVER(p));tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat,p.CLPE))).addTo(map);});
+      layer.on('mousemove',e=>{tooltip.setLatLng(e.latlng).setContent(ttHTML(p,nearestCommune(e.latlng.lng,e.latlng.lat,p.CLPE)));});
       layer.on('mouseout',()=>{layer.setStyle(CLPE_NORMAL(p));map.removeLayer(tooltip);});
       layer.on('click',()=>{
         nav.clpe=p.CLPE;nav.department=p.dep;nav.region=p.reg;navLevel='clpe';
