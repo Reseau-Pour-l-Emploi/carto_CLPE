@@ -405,13 +405,27 @@ function buildEpciLookup(){
 // Données complètes pour les lookups (non filtrées)
 let DEP_FULL,REG_FULL;
 
+// Calcule et injecte bbox:[minX,minY,maxX,maxY] sur chaque feature
+function addBbox(geojson){
+  geojson.features=geojson.features.map(f=>{
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    function pc(c){if(typeof c[0]==='number'){if(c[0]<minX)minX=c[0];if(c[0]>maxX)maxX=c[0];if(c[1]<minY)minY=c[1];if(c[1]>maxY)maxY=c[1];}else c.forEach(pc);}
+    if(f.geometry&&f.geometry.coordinates)pc(f.geometry.coordinates);
+    f.properties={...f.properties,bbox:[minX,minY,maxX,maxY]};
+    return f;
+  });
+  return geojson;
+}
+
 async function loadAll(){
   setProgress(5,'Chargement des régions…');
   const regRaw=await fetch('data/region.geojson').then(r=>r.json());
+  addBbox(regRaw);
   REG_FULL=regRaw;
   REG_DATA={...regRaw,features:regRaw.features.filter(f=>!REGS_NO_CLPE.has(f.properties.nom_officiel))};
   setProgress(14,'Chargement des départements…');
   const depRaw=await fetch('data/departement.geojson').then(r=>r.json());
+  addBbox(depRaw);
   DEP_FULL=depRaw;
   DEP_DATA={...depRaw,features:depRaw.features.filter(f=>!DEPS_NO_CLPE.has(f.properties.nom_officiel))};
   setProgress(25,'Chargement des comités locaux…');
