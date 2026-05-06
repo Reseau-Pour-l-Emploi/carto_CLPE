@@ -85,7 +85,7 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 .tooltip-clpe .tt-epci   { display:block; font-size:.67rem; color:#80d8b8 !important; }
 .tooltip-clpe .tt-info   { display:block; font-size:.65rem; color:#8aacbe !important; font-style:italic; }
 .tooltip-clpe .tt-clpe   { display:block; font-size:.78rem; color:#e8f4ff !important; font-weight:700; border-top:1px solid rgba(74,159,212,.25); padding-top:4px; margin-top:3px; }
-.tooltip-clpe .tt-clpe-code { display:inline; font-size:.66rem; color:#7aaccc !important; font-weight:400; margin-left:5px; }
+.tooltip-clpe .tt-clpe-code { display:block; font-size:.63rem; color:#7aaccc !important; font-weight:400; margin-top:1px; }
 #legend { position:absolute; bottom:22px; left:14px; background:rgba(4,12,22,.92); border:1px solid #1a3550; border-radius:9px; padding:10px 14px; font-size:.69rem; z-index:1000; min-width:160px; box-shadow:0 4px 18px rgba(0,0,0,.6); }
 #legend h3 { color:#7ec8f4; font-size:.71rem; margin-bottom:8px; font-weight:700; letter-spacing:.3px; }
 .leg-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; color:#7090a8; }
@@ -551,7 +551,7 @@ function ttHTML(p,comObj){
         +(epciName?'<span class="tt-epci">EPCI : '+epciName+'</span>':'')
         +'<span class="tt-dep">Département : '+depName+'</span>'
         +'<span class="tt-region">Région : '+regName+'</span>'
-        +'<span class="tt-clpe">CLPE : '+(p.CLPE||'—')+(clpeCode?'<span class="tt-clpe-code">('+clpeCode+')</span>':'')+'</span>';
+        +'<span class="tt-clpe">CLPE : '+(p.CLPE||'—')+(clpeCode?'<span class="tt-clpe-code">'+clpeCode+'</span>':'')+'</span>';
 }
 
 let clpeLayer,depLayer,regLayer,comLayer;
