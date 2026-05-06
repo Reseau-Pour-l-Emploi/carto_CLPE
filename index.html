@@ -79,12 +79,13 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 #loading-status { color:#4a7a9a; font-size:.72rem; margin-top:10px; }
 .tooltip-clpe { background:rgba(4,12,22,.97) !important; border:1px solid #2a6090 !important; font-size:.77rem !important; padding:8px 13px !important; border-radius:8px !important; box-shadow:0 4px 20px rgba(0,0,0,.8) !important; pointer-events:none !important; max-width:300px !important; line-height:1.7 !important; }
 .tooltip-clpe::before { display:none !important; }
-.tooltip-clpe .tt-region { display:block; font-size:.62rem; color:#ffe070 !important; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
-.tooltip-clpe .tt-dep    { display:block; font-size:.69rem; color:#f5b84a !important; }
-.tooltip-clpe .tt-com    { display:block; font-size:.67rem; color:#8ecce8 !important; font-style:italic; }
+.tooltip-clpe .tt-region { display:block; font-size:.67rem; color:#e879b0 !important; }
+.tooltip-clpe .tt-dep    { display:block; font-size:.67rem; color:#e8a030 !important; }
+.tooltip-clpe .tt-com    { display:block; font-size:.78rem; color:#64b4f0 !important; font-weight:700; }
 .tooltip-clpe .tt-epci   { display:block; font-size:.67rem; color:#80d8b8 !important; }
 .tooltip-clpe .tt-info   { display:block; font-size:.65rem; color:#8aacbe !important; font-style:italic; }
-.tooltip-clpe .tt-clpe   { display:block; font-size:.83rem; color:#e8f4ff !important; font-weight:700; border-top:1px solid rgba(74,159,212,.25); padding-top:4px; margin-top:3px; }
+.tooltip-clpe .tt-clpe   { display:block; font-size:.78rem; color:#e8f4ff !important; font-weight:700; border-top:1px solid rgba(74,159,212,.25); padding-top:4px; margin-top:3px; }
+.tooltip-clpe .tt-clpe-code { display:inline; font-size:.66rem; color:#7aaccc !important; font-weight:400; margin-left:5px; }
 #legend { position:absolute; bottom:22px; left:14px; background:rgba(4,12,22,.92); border:1px solid #1a3550; border-radius:9px; padding:10px 14px; font-size:.69rem; z-index:1000; min-width:160px; box-shadow:0 4px 18px rgba(0,0,0,.6); }
 #legend h3 { color:#7ec8f4; font-size:.71rem; margin-bottom:8px; font-weight:700; letter-spacing:.3px; }
 .leg-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; color:#7090a8; }
@@ -279,6 +280,7 @@ let depCodeToName={},regCodeToName={},depCodeToRegName={};
 let COM_CENTROIDS=[];
 let comByClpe={},comByDep={},comByReg={};
 let comCodeToEpci={}; // code INSEE commune → nom EPCI
+let clpeNameToCode={}; // libellé CLPE → code CLPE
 
 // Dérivation du code département depuis le code commune INSEE
 // (2 premiers caractères sauf DOM 97x → 3 caractères)
@@ -301,6 +303,7 @@ function buildComLists(){
     const code=p.code_insee||p['Code Commune Insee']||'';
     const nom=p.nom_officiel||p.nom||'';
     let clpeName=p['Libellé Comité Local Pour l-Emploi']||p.clpe||'';
+    let clpeCode=p['Code Comité Local Pour l-Emploi']||p['Code Comite Local Pour l-Emploi']||'';
     const dc=depCodeFromInsee(code);
     let depName=depCodeToName[dc]||'';
     let regName=depCodeToRegName[dc]||'';
@@ -314,7 +317,9 @@ function buildComLists(){
     const pop=+(p.population||0);
     // superficie_cadastrale est en hectares → diviser par 100 pour obtenir km²
     const sup=+(p.superficie_cadastrale||p.superficie||0)/100;
-    const rec={code,nom,clpe:clpeName,dep:depName,reg:regName,pop,sup};
+    // Relier libellé CLPE → code CLPE (depuis commune.geojson)
+    if(clpeName&&clpeCode)clpeNameToCode[clpeName]=clpeCode;
+    const rec={code,nom,clpe:clpeName,clpeCode,dep:depName,reg:regName,pop,sup};
     if(clpeName){if(!comByClpe[clpeName])comByClpe[clpeName]=[];comByClpe[clpeName].push(rec);}
     if(depName) {if(!comByDep[depName]) comByDep[depName]=[];  comByDep[depName].push(rec);}
     if(regName) {if(!comByReg[regName]) comByReg[regName]=[];  comByReg[regName].push(rec);}
@@ -540,12 +545,13 @@ function ttHTML(p,comObj){
   ):null;
   const pop=comObj&&comObj.pop>0?comObj.pop.toLocaleString('fr-FR')+' hab.':null;
   const sup=comObj&&comObj.sup>0?comObj.sup.toLocaleString('fr-FR',{maximumFractionDigits:1})+' km²':null;
-  return '<span class="tt-region">📍 '+regName+'</span>'
-        +'<span class="tt-dep">🏛 '+depName+'</span>'
-        +(comObj?'<span class="tt-com">🏘 '+comObj.name+'</span>':'')
-        +(epciName?'<span class="tt-epci">🏙 '+epciName+'</span>':'')
+  const clpeCode=clpeNameToCode[p.CLPE||'']||'';
+  return (comObj?'<span class="tt-com">Commune : '+comObj.name+'</span>':'')
         +((pop||sup)?'<span class="tt-info">'+(pop?'👥 '+pop:'')+(pop&&sup?' &nbsp;·&nbsp; ':'')+(sup?'📐 '+sup:'')+'</span>':'')
-        +'<span class="tt-clpe">🤝 '+(p.CLPE||'—')+'</span>';
+        +(epciName?'<span class="tt-epci">EPCI : '+epciName+'</span>':'')
+        +'<span class="tt-dep">Département : '+depName+'</span>'
+        +'<span class="tt-region">Région : '+regName+'</span>'
+        +'<span class="tt-clpe">CLPE : '+(p.CLPE||'—')+(clpeCode?'<span class="tt-clpe-code">('+clpeCode+')</span>':'')+'</span>';
 }
 
 let clpeLayer,depLayer,regLayer,comLayer;
@@ -685,7 +691,8 @@ function onClpeChange(){
 let _communes=[];
 function showExportPanel(clpeName){
   _communes=(comByClpe[clpeName]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
-  document.getElementById('export-clpe-title').textContent='🤝 '+clpeName;
+  const _panelCode=clpeNameToCode[clpeName]||'';
+  document.getElementById('export-clpe-title').textContent='🤝 '+clpeName+(_panelCode?' ('+_panelCode+')':'');
   // Agrégation population et superficie
   let totalPop=0,totalSup=0;
   _communes.forEach(c=>{totalPop+=c.pop||0;totalSup+=c.sup||0;});
@@ -706,22 +713,22 @@ function filterExportList(q){renderList(q?_communes.filter(c=>c.nom.toLowerCase(
 function hideExportPanel(){document.getElementById('export-panel').classList.remove('open');}
 function exportCSV(){
   if(!nav.clpe||!_communes.length)return;
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département','Région'],..._communes.map(c=>[c.code,c.nom,c.clpe,c.dep,c.reg])],'communes_CLPE_'+nav.clpe.replace(/[^a-zA-Z0-9\-]/g,'_'));
+  downloadCSV([['Code INSEE','Commune','Code Comité Local Pour l\'Emploi','Comité Local Pour l\'Emploi','Département','Région'],..._communes.map(c=>[c.code,c.nom,c.clpeCode||clpeNameToCode[c.clpe]||'',c.clpe,c.dep,c.reg])],'communes_CLPE_'+nav.clpe.replace(/[^a-zA-Z0-9\-]/g,'_'));
 }
 function exportRegion(){
   if(!nav.region)return;
   const list=(comByReg[nav.region]||[]).slice().sort((a,b)=>a.dep.localeCompare(b.dep,'fr')||a.nom.localeCompare(b.nom,'fr'));
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département'],...list.map(c=>[c.code,c.nom,c.clpe,c.dep])],'communes_region_'+nav.region.replace(/[^a-zA-Z0-9\-]/g,'_'));
+  downloadCSV([['Code INSEE','Commune','Code Comité Local Pour l\'Emploi','Comité Local Pour l\'Emploi','Département'],...list.map(c=>[c.code,c.nom,c.clpeCode||clpeNameToCode[c.clpe]||'',c.clpe,c.dep])],'communes_region_'+nav.region.replace(/[^a-zA-Z0-9\-]/g,'_'));
 }
 function exportDep(){
   if(!nav.department)return;
   const list=(comByDep[nav.department]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département'],...list.map(c=>[c.code,c.nom,c.clpe,c.dep])],'communes_dep_'+nav.department.replace(/[^a-zA-Z0-9\-]/g,'_'));
+  downloadCSV([['Code INSEE','Commune','Code Comité Local Pour l\'Emploi','Comité Local Pour l\'Emploi','Département'],...list.map(c=>[c.code,c.nom,c.clpeCode||clpeNameToCode[c.clpe]||'',c.clpe,c.dep])],'communes_dep_'+nav.department.replace(/[^a-zA-Z0-9\-]/g,'_'));
 }
 function exportNational(){
   const all=[];Object.values(comByReg).forEach(list=>all.push(...list));
   all.sort((a,b)=>a.reg.localeCompare(b.reg,'fr')||a.dep.localeCompare(b.dep,'fr')||a.nom.localeCompare(b.nom,'fr'));
-  downloadCSV([['Code INSEE','Commune','Comité Local Pour l\'Emploi','Département','Région'],...all.map(c=>[c.code,c.nom,c.clpe,c.dep,c.reg])],'communes_CLPE_France_entiere');
+  downloadCSV([['Code INSEE','Commune','Code Comité Local Pour l\'Emploi','Comité Local Pour l\'Emploi','Département','Région'],...all.map(c=>[c.code,c.nom,c.clpeCode||clpeNameToCode[c.clpe]||'',c.clpe,c.dep,c.reg])],'communes_CLPE_France_entiere');
 }
 function downloadCSV(rows,filename){
   const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
