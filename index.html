@@ -19,6 +19,13 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:#0f1923; color:#e0e8f
 select { background:#0d2035; color:#c8dff0; border:1px solid #1e4060; border-radius:6px; padding:5px 10px; font-size:.76rem; cursor:pointer; outline:none; min-width:165px; transition:border-color .2s,box-shadow .2s; }
 select:hover { border-color:#4a9fd4; }
 select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
+
+/* Styles pour le Toggle TZCLD */
+.tzcld-toggle-wrap { display:flex; align-items:center; gap:6px; background:rgba(243,156,18,0.1); border:1px solid rgba(243,156,18,0.4); padding:4px 10px; border-radius:6px; height:29px; cursor:pointer; transition:background 0.2s; }
+.tzcld-toggle-wrap:hover { background:rgba(243,156,18,0.2); }
+.tzcld-toggle-wrap label { font-size:0.7rem; color:#f39c12; font-weight:600; cursor:pointer; text-transform:none; letter-spacing:0; }
+.tzcld-toggle-wrap input { cursor:pointer; }
+
 .btn-reset { background:transparent; color:#7ec8f4; border:1px solid #2a5a8c; border-radius:6px; padding:5px 14px; font-size:.76rem; cursor:pointer; transition:background .2s,border-color .2s; white-space:nowrap; }
 .btn-reset:hover { background:#1a3a5c; border-color:#4a9fd4; }
 #export-toolbar { background:#050f1a; border-bottom:1px solid #0e2030; padding:5px 16px; display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
@@ -105,7 +112,7 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 
 <div id="header">
   <div id="header-title">
-    <h1>Comités Locaux Pour l&apos;Emploi &mdash; France</h1>
+    <h1>Comités Locaux Pour l'Emploi &mdash; France</h1>
     <p>362 comités &middot; France métropolitaine et DOM &middot; Cliquez et faites glisser pour déplacer</p>
   </div>
   <div id="controls">
@@ -122,12 +129,16 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
       </select>
     </div>
     <div class="ctrl-group">
-      <label>Comité Local Pour l&apos;Emploi</label>
+      <label>Comité Local Pour l'Emploi</label>
       <select id="sel-clpe" onchange="onClpeChange()">
         <option value="">— Tous les CLPE —</option>
       </select>
     </div>
-    <button class="btn-reset" onclick="resetView()">&#8634; Vue d&apos;ensemble</button>
+    <button class="btn-reset" onclick="resetView()">&#8634; Vue d'ensemble</button>
+    <label class="tzcld-toggle-wrap">
+      <input type="checkbox" id="chk-tzcld" onchange="toggleTZCLD(this.checked)">
+      <span>Afficher TZCLD</span>
+    </label>
   </div>
 </div>
 
@@ -176,7 +187,8 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
   </div>
   <div id="legend">
     <h3>Légende</h3>
-    <div class="leg-item"><div class="leg-swatch" style="background:linear-gradient(90deg,#1a5276,#2980b9,#1abc9c);opacity:.8;border:1px solid rgba(30,100,160,.4);"></div>Comité Local Pour l&apos;Emploi</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:linear-gradient(90deg,#1a5276,#2980b9,#1abc9c);opacity:.8;border:1px solid rgba(30,100,160,.4);"></div>Comité Local Pour l'Emploi</div>
+    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#f39c12" stroke-width="2.5" stroke-dasharray="4 3"/></svg></div>Délimitations TZCLD</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e879b0" stroke-width="2.5"/></svg></div>Région</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.8"/></svg></div>Département</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(100,180,240,0.9)" stroke-width="1.3"/></svg></div>Commune</div>
@@ -188,13 +200,11 @@ const PALETTE=['#1a5276','#1f8cbf','#117a65','#154360','#2980b9','#1abc9c','#0e6
 const clpeColor=idx=>PALETTE[idx%PALETTE.length];
 const CLPE_NORMAL=p=>({weight:1.0,color:'rgba(20,60,110,0.5)',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.72});
 const CLPE_HOVER =p=>({weight:2.5,color:'#7ec8f4',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.9});
-// Contours seulement — fill transparent
 const DEP_STYLE={weight:2.0,color:'#e8a030',fill:false};
-const REG_STYLE={weight:3.0,color:'#e879b0',fill:false};  // rose/pink
+const REG_STYLE={weight:3.0,color:'#e879b0',fill:false};
 
 const REGS_NO_CLPE=new Set([]);
 const DEPS_NO_CLPE=new Set([]);
-// Collectivités à traitement unifié : tous les niveaux portent le nom de l'île
 const ISLANDS_SPECIAL=new Set(['Saint-Barthélemy','Saint-Martin','Saint-Pierre-et-Miquelon']);
 
 const bar=document.getElementById('loading-bar');
@@ -272,22 +282,22 @@ function updateExportBar(){
   (nav.region||nav.department||nav.clpe)?btnPng.classList.remove('hidden'):btnPng.classList.add('hidden');
 }
 
-// ─── Data ──────────────────────────────────────────────────────────────────
 let REG_DATA,DEP_DATA,CLPE_DATA,COM_DATA,EPCI_DATA;
+// NOUVEAU: Variables pour TZCLD
+let TZCLD_DATA = null;
+let tzcldLayer = null;
+
 let allDeps=[],allClpes=[];
 let regToDeps={},depToClpes={},depToRegName={};
 let depCodeToName={},regCodeToName={},depCodeToRegName={};
 let COM_CENTROIDS=[];
 let comByClpe={},comByDep={},comByReg={};
-let comCodeToEpci={}; // code INSEE commune → nom EPCI
-let clpeNameToCode={}; // libellé CLPE → code CLPE
+let comCodeToEpci={}; 
+let clpeNameToCode={}; 
 
-// Dérivation du code département depuis le code commune INSEE
-// (2 premiers caractères sauf DOM 97x → 3 caractères)
 function depCodeFromInsee(code){return code.startsWith('97')?code.slice(0,3):code.slice(0,2);}
 
 function buildLookups(){
-  // Tables complètes depuis dep/reg FULL (non filtrés)
   REG_FULL.features.forEach(f=>{regCodeToName[f.properties.code_insee]=f.properties.nom_officiel;});
   DEP_FULL.features.forEach(f=>{
     const dc=f.properties.code_insee;
@@ -299,7 +309,6 @@ function buildComLists(){
   comByClpe={};comByDep={};comByReg={};
   COM_DATA.features.forEach(f=>{
     const p=f.properties;
-    // Propriétés réelles du fichier commune.geojson
     const code=p.code_insee||p['Code Commune Insee']||'';
     const nom=p.nom_officiel||p.nom||'';
     let clpeName=p['Libellé Comité Local Pour l-Emploi']||p.clpe||'';
@@ -307,17 +316,13 @@ function buildComLists(){
     const dc=depCodeFromInsee(code);
     let depName=depCodeToName[dc]||'';
     let regName=depCodeToRegName[dc]||'';
-    // Collectivités sui generis : forcer région, département, CLPE et EPCI
     if(code==='NR'){
       if(nom==='Saint-Barthélemy'){depName='Saint-Barthélemy';regName='Saint-Barthélemy';clpeName='Saint-Barthélemy';}
       else if(nom==='Saint-Martin'){depName='Saint-Martin';regName='Saint-Martin';clpeName='Saint-Martin';}
     }
-    // Saint-Pierre-et-Miquelon (codes INSEE 975xx)
     if(code.startsWith('975')){depName='Saint-Pierre-et-Miquelon';regName='Saint-Pierre-et-Miquelon';clpeName='Saint-Pierre-et-Miquelon';}
     const pop=+(p.population||0);
-    // superficie_cadastrale est en hectares → diviser par 100 pour obtenir km²
     const sup=+(p.superficie_cadastrale||p.superficie||0)/100;
-    // Relier libellé CLPE → code CLPE (depuis commune.geojson)
     if(clpeName&&clpeCode)clpeNameToCode[clpeName]=clpeCode;
     const rec={code,nom,clpe:clpeName,clpeCode,dep:depName,reg:regName,pop,sup};
     if(clpeName){if(!comByClpe[clpeName])comByClpe[clpeName]=[];comByClpe[clpeName].push(rec);}
@@ -337,8 +342,7 @@ function buildCentroids(){
     const code=p.code_insee||p['Code Commune Insee']||'';
     const nom=p.nom_officiel||p.nom||'';
     const pop=+(p.population||0);
-    const sup=+(p.superficie_cadastrale||p.superficie||0)/100; // ha → km²
-    // Clé CLPE : brute depuis le GeoJSON + forçage collectivités sui generis
+    const sup=+(p.superficie_cadastrale||p.superficie||0)/100;
     let clpe=p['Libellé Comité Local Pour l-Emploi']||p.clpe||'';
     if(code==='NR'){
       if(nom==='Saint-Barthélemy')clpe='Saint-Barthélemy';
@@ -349,34 +353,26 @@ function buildCentroids(){
   });
 }
 function nearestCommune(lng,lat,clpeName){
-  // Restreindre aux communes du CLPE survolé pour éviter les faux positifs inter-territoires.
-  // IMPORTANT : ne pas faire de fallback sur COM_CENTROIDS complet — les insets DOM/SPM
-  // sont proches en coordonnées planes (ex. SPM ≈ (-1,41.5), Mayotte ≈ (0,41.7)) et le
-  // fallback ramènerait des communes d'un territoire voisin au lieu de null.
   const pool=clpeName?COM_CENTROIDS.filter(c=>c.clpe===clpeName):COM_CENTROIDS;
-  if(!pool.length)return null; // CLPE sans communes connues → pas de résultat plutôt qu'un faux positif
+  if(!pool.length)return null;
   let best=null,bd=Infinity;
   for(const c of pool){const d=(c.x-lng)*(c.x-lng)+(c.y-lat)*(c.y-lat);if(d<bd){bd=d;best=c;}}
   return best?{name:best.name,code:best.code,pop:best.pop,sup:best.sup}:null;
 }
 function buildCascading(){
   const rcn={};
-  // Utiliser REG_FULL pour le mapping dep→reg (inclut toutes les régions)
   REG_FULL.features.forEach(f=>rcn[f.properties.code_insee]=f.properties.nom_officiel);
-  // Utiliser DEP_FULL pour que tous les départements (y.c. Val-de-Marne) aient leur région
   DEP_FULL.features.forEach(f=>{
     const dep=f.properties.nom_officiel;
     const regName=rcn[f.properties.code_insee_de_la_region||'']||'';
     depToRegName[dep]=regName;
   });
-  // Pour les dropdowns, utiliser seulement les dep/reg affichées sur la carte
   DEP_DATA.features.forEach(f=>{
     const dep=f.properties.nom_officiel;
     const regName=depToRegName[dep]||'';
     if(!regToDeps[regName])regToDeps[regName]=[];
     regToDeps[regName].push(dep);
   });
-  // Un CLPE multi-dep apparaît dans TOUS ses départements (basé sur les communes réelles)
   const _clpeInDeps={};
   COM_DATA.features.forEach(f=>{
     const clpeName=f.properties.clpe||'';if(!clpeName)return;
@@ -388,7 +384,6 @@ function buildCascading(){
   Object.entries(_clpeInDeps).forEach(([dn,s])=>{depToClpes[dn]=Array.from(s).sort();});
   Object.values(regToDeps).forEach(a=>a.sort());
   Object.values(depToClpes).forEach(a=>a.sort());
-  // Garantir les mappings pour les îles à traitement unifié
   ISLANDS_SPECIAL.forEach(name=>{
     depToRegName[name]=name;
     if(!regToDeps[name])regToDeps[name]=[];
@@ -400,15 +395,9 @@ function buildCascading(){
   allClpes=[...new Set(CLPE_DATA.features.map(f=>f.properties.CLPE))].sort();
 }
 
-// ─── Lookup EPCI ────────────────────────────────────────────────────────────
-// Structure epci.geojson :
-//   nom_officiel, code_siren, codes_insee_des_communes_membres (séparés par '/')
-// Structure commune.geojson :
-//   code_insee, codes_siren_des_epci (code SIREN de l'EPCI)
 function buildEpciLookup(){
   comCodeToEpci={};
   if(!EPCI_DATA)return;
-  // Méthode principale : EPCI liste ses communes en codes INSEE séparés par '/'
   let usedSlash=false;
   EPCI_DATA.features.forEach(f=>{
     const p=f.properties||{};
@@ -421,7 +410,6 @@ function buildEpciLookup(){
     }
   });
   if(usedSlash)return;
-  // Fallback : commune porte son SIREN EPCI → lookup inverse
   const sirenToName={};
   EPCI_DATA.features.forEach(f=>{
     const p=f.properties||{};
@@ -435,7 +423,6 @@ function buildEpciLookup(){
     const siren=p.codes_siren_des_epci||p.siren_epci||'';
     if(siren&&sirenToName[siren])comCodeToEpci[code]=sirenToName[siren];
   });
-  // Forcer l'EPCI des îles à traitement unifié
   COM_DATA.features.forEach(f=>{
     const p=f.properties||{};
     const code=p.code_insee||p['Code Commune Insee']||'';
@@ -445,10 +432,8 @@ function buildEpciLookup(){
   });
 }
 
-// Données complètes pour les lookups (non filtrées)
 let DEP_FULL,REG_FULL;
 
-// Calcule et injecte bbox:[minX,minY,maxX,maxY] sur chaque feature
 function addBbox(geojson){
   geojson.features=geojson.features.map(f=>{
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -484,7 +469,6 @@ async function loadAll(){
     });
     return geojson;
   });
-  // Injecter des CLPE synthétiques pour les îles spéciales (si absentes du GeoJSON)
   const _existingClpe=new Set(CLPE_DATA.features.map(f=>f.properties.CLPE));
   ISLANDS_SPECIAL.forEach(name=>{
     if(!_existingClpe.has(name)){
@@ -500,6 +484,15 @@ async function loadAll(){
   COM_DATA=await fetch('data/commune.geojson').then(r=>r.json());
   setProgress(55,'Chargement des EPCI…');
   EPCI_DATA=await fetch('data/epci.geojson').then(r=>r.json()).catch(()=>{console.warn('epci.geojson non disponible');return null;});
+  
+  // NOUVEAU: Chargement de TZCLD
+  setProgress(65,'Chargement des délimitations TZCLD…');
+  try {
+    TZCLD_DATA = await fetch('data/cle-delimitations.geojson').then(r=>r.json());
+  } catch(e) {
+    console.warn('Fichier cle-delimitations.geojson non trouvé ou introuvable.', e);
+  }
+
   setProgress(72,'Construction des index…');
   buildLookups();buildComLists();buildCentroids();buildCascading();buildEpciLookup();
   setProgress(82,'Masque mondial…');
@@ -522,15 +515,12 @@ async function addWorldMask(){
 
 const tooltip=L.tooltip({className:'tooltip-clpe',permanent:false,direction:'top',offset:[0,-10]});
 function ttHTML(p,comObj){
-  // Dériver dep et région depuis le code INSEE de la commune survolée
   let depName=p.dep||'—', regName=p.reg||'—';
   if(comObj&&comObj.code){
     if(comObj.code==='NR'){
-      // Collectivités sui generis : code partagé 'NR' — résolution par nom de commune
       const _forced={'Saint-Barthélemy':'Saint-Barthélemy','Saint-Martin':'Saint-Martin'}[comObj.name];
       if(_forced){depName=_forced;regName=_forced;}
     }else if(comObj.code.startsWith('975')){
-      // Saint-Pierre-et-Miquelon
       depName='Saint-Pierre-et-Miquelon';regName='Saint-Pierre-et-Miquelon';
     }else{
       const dc=depCodeFromInsee(comObj.code);
@@ -554,9 +544,6 @@ function ttHTML(p,comObj){
         +'<span class="tt-clpe">CLPE : '+(p.CLPE||'—')+(clpeCode?'<span class="tt-clpe-code">'+clpeCode+'</span>':'')+'</span>';
 }
 
-let clpeLayer,depLayer,regLayer,comLayer;
-let regLabelGroup,depLabelGroup,clpeLabelGroup;
-
 function buildLayers(){
   const comCanvas=L.canvas({pane:'comPane',tolerance:1});
   comLayer=L.geoJSON(COM_DATA,{renderer:comCanvas,pane:'comPane',style:{weight:1.3,color:'rgba(100,180,240,0.55)',fill:false},interactive:false}).addTo(map);
@@ -566,6 +553,7 @@ function buildLayers(){
     const w=z>=12?1.8:z>=10?1.5:z>=8?1.3:1.2;
     comLayer.setStyle({color:'rgba(100,180,240,'+op+')',weight:w});
   });
+  
   const clpeCanvas=L.canvas({pane:'clpePane',tolerance:2});
   clpeLayer=L.geoJSON(CLPE_DATA,{
     renderer:clpeCanvas,pane:'clpePane',
@@ -584,9 +572,43 @@ function buildLayers(){
       });
     }
   }).addTo(map);
+
+  // NOUVEAU: Construction de la couche TZCLD
+  if(TZCLD_DATA) {
+    const tzcldPane = map.createPane('tzcldPane');
+    tzcldPane.style.zIndex = '435'; // Au-dessus des CLPE, mais en dessous des départements
+    tzcldPane.style.pointerEvents = 'none'; // 'none' pour ne pas masquer les popups CLPE au survol
+    
+    tzcldLayer = L.geoJSON(TZCLD_DATA, {
+      pane: 'tzcldPane',
+      style: {
+        weight: 2.5,
+        color: '#f39c12', // Orange
+        dashArray: '4, 6', // Pointillés
+        fill: false, // Pas de fond pour laisser la carte lisible
+        interactive: false
+      }
+    });
+    // La couche tzcldLayer n'est pas ajoutée à la map par défaut, elle attend le clic sur la checkbox
+  }
+
   depLayer=L.geoJSON(DEP_DATA,{renderer:L.svg({pane:'depPane'}),pane:'depPane',style:DEP_STYLE,interactive:false}).addTo(map);
   regLayer=L.geoJSON(REG_DATA,{renderer:L.svg({pane:'regPane'}),pane:'regPane',style:REG_STYLE,interactive:false}).addTo(map);
   buildLabels();
+}
+
+// NOUVEAU: Fonction de bascule pour la couche TZCLD
+function toggleTZCLD(show) {
+  if (!tzcldLayer) {
+    alert("Les données des délimitations TZCLD n'ont pas pu être chargées. Vérifiez le fichier data/cle-delimitations.geojson.");
+    document.getElementById('chk-tzcld').checked = false;
+    return;
+  }
+  if (show) {
+    map.addLayer(tzcldLayer);
+  } else {
+    map.removeLayer(tzcldLayer);
+  }
 }
 
 function buildLabels(){
@@ -667,7 +689,6 @@ function onClpeChange(){
   }
   const feat=CLPE_DATA.features.find(f=>f.properties.CLPE===cn);if(!feat)return;
   const p=feat.properties;
-  // Dériver dep/reg depuis les communes réelles du CLPE (dep majoritaire via code INSEE)
   const _depCounts={};
   (comByClpe[cn]||[]).forEach(c=>{
     const dc=depCodeFromInsee(c.code);
@@ -693,7 +714,6 @@ function showExportPanel(clpeName){
   _communes=(comByClpe[clpeName]||[]).slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
   const _panelCode=clpeNameToCode[clpeName]||'';
   document.getElementById('export-clpe-title').textContent='🤝 '+clpeName+(_panelCode?' ('+_panelCode+')':'');
-  // Agrégation population et superficie
   let totalPop=0,totalSup=0;
   _communes.forEach(c=>{totalPop+=c.pop||0;totalSup+=c.sup||0;});
   let countText=_communes.length+' commune'+(_communes.length>1?'s':'');
@@ -737,20 +757,18 @@ function downloadCSV(rows,filename){
   a.download=filename+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
-// ─── Export PNG ─────────────────────────────────────────────────────────────
 function startPNGExport(){
   const territory=nav.clpe||nav.department||nav.region;
   if(!territory){alert('Veuillez sélectionner un territoire avant d\'exporter.');return;}
   exportMapPNG(territory);
 }
 
-// Dessiner une géométrie GeoJSON directement depuis les coordonnées lat/lng
-// en convertissant via map.latLngToContainerPoint → alignement parfait avec la carte
-function renderGeomDirect(ctx,geom,yOff,fillStyle,strokeStyle,lineWidth){
+function renderGeomDirect(ctx,geom,yOff,fillStyle,strokeStyle,lineWidth,dashArray){
   if(!geom)return;
   const polys=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
   ctx.save();
   if(strokeStyle){ctx.strokeStyle=strokeStyle;ctx.lineWidth=lineWidth||1.5;}
+  if(dashArray)ctx.setLineDash(dashArray);
   if(fillStyle)ctx.fillStyle=fillStyle;
   polys.forEach(poly=>{
     ctx.beginPath();
@@ -769,7 +787,6 @@ function renderGeomDirect(ctx,geom,yOff,fillStyle,strokeStyle,lineWidth){
   ctx.restore();
 }
 
-// Placement d'étiquette sans chevauchement
 function tryLabel(ctx,text,x,y,font,color,shadow,placed,maxPxW){
   ctx.save();
   ctx.font=font;
@@ -808,14 +825,11 @@ async function exportMapPNG(territory){
     merged.width=TOTAL_W*dpr;merged.height=TOTAL_H*dpr;
     const ctx=merged.getContext('2d');ctx.scale(dpr,dpr);
 
-    // Fond
     ctx.fillStyle='#0c1825';ctx.fillRect(0,0,TOTAL_W,TOTAL_H);
 
-    // Zone carte : clip
     ctx.save();
     ctx.beginPath();ctx.rect(0,HEADER,W,H);ctx.clip();
 
-    // ── Tuiles (best-effort CORS)
     const imgs=Array.from(mapEl.querySelectorAll('.leaflet-tile-pane img'));
     for(const img of imgs){
       if(!img.complete||img.naturalWidth===0)continue;
@@ -827,7 +841,6 @@ async function exportMapPNG(territory){
     }
     ctx.globalAlpha=1;
 
-    // ── Canvas Leaflet (CLPE fills + contours communes) — alignement natif
     const canvases=Array.from(mapEl.querySelectorAll('canvas'));
     for(const c of canvases){
       try{
@@ -835,28 +848,23 @@ async function exportMapPNG(territory){
         ctx.drawImage(c,r.left-rect.left,r.top-rect.top+HEADER,r.width,r.height);
       }catch(e){}
     }
-    ctx.restore(); // fin clip
+    ctx.restore(); 
 
-    // ── Contours vectoriels redessines depuis GeoJSON (alignement parfait)
     const yOff=HEADER;
 
     if(level==='national'){
-      // Contours régions seulement
       REG_DATA.features.forEach(f=>renderGeomDirect(ctx,f.geometry,yOff,null,'#e879b0',2.5));
     }
     if(level==='region'){
-      // Contours dep + contour région
       const regName=nav.region;
       DEP_DATA.features.forEach(f=>{
         if(depToRegName[f.properties.nom_officiel]!==regName)return;
         renderGeomDirect(ctx,f.geometry,yOff,null,'#e8a030',2.0);
       });
-      // Contour de la région par-dessus
       const rFeat=REG_DATA.features.find(f=>f.properties.nom_officiel===regName);
       if(rFeat)renderGeomDirect(ctx,rFeat.geometry,yOff,null,'#e879b0',3.0);
     }
     if(level==='department'){
-      // Contours CLPE du département + contour dep
       const depName=nav.department;
       CLPE_DATA.features.forEach(f=>{
         if(f.properties.dep!==depName)return;
@@ -866,12 +874,18 @@ async function exportMapPNG(territory){
       if(dFeat)renderGeomDirect(ctx,dFeat.geometry,yOff,null,'#e8a030',2.5);
     }
     if(level==='clpe'){
-      // Contour du CLPE surligné
       const cFeat=CLPE_DATA.features.find(f=>f.properties.CLPE===nav.clpe);
       if(cFeat)renderGeomDirect(ctx,cFeat.geometry,yOff,null,'#7ec8f4',2.5);
     }
+    
+    // NOUVEAU: Rendus des TZCLD sur l'export si la case est cochée
+    const chkTzcld = document.getElementById('chk-tzcld');
+    if(chkTzcld && chkTzcld.checked && TZCLD_DATA) {
+        TZCLD_DATA.features.forEach(f=>{
+            renderGeomDirect(ctx,f.geometry,yOff,null,'#f39c12',2.5, [4, 6]);
+        });
+    }
 
-    // ── Étiquettes (anti-chevauchement)
     const placed=[];
     const inMap=(x,y)=>x>=4&&x<=W-4&&y>=HEADER+4&&y<=HEADER+H-4;
     const bboxPx=(bbox)=>{
@@ -887,13 +901,11 @@ async function exportMapPNG(territory){
     }
     if(level==='region'){
       const regName=nav.region;
-      // 1. Étiquettes départements
       DEP_DATA.features.forEach(f=>{
         if(depToRegName[f.properties.nom_officiel]!==regName)return;
         const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
         tryLabel(ctx,f.properties.nom_officiel,c.x,c.y,'bold 10px "Segoe UI",Arial,sans-serif','#f5b84a',7,placed,null);
       });
-      // 2. Étiquettes CLPE (plus petites, sous les dep)
       CLPE_DATA.features.forEach(f=>{
         if(f.properties.reg!==regName)return;
         const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
@@ -902,7 +914,6 @@ async function exportMapPNG(territory){
     }
     if(level==='department'){
       const depName=nav.department;
-      // Étiquettes CLPE du département
       CLPE_DATA.features.forEach(f=>{
         if(f.properties.dep!==depName)return;
         const c=bboxPx(f.properties.bbox);if(!inMap(c.x,c.y))return;
@@ -910,7 +921,6 @@ async function exportMapPNG(territory){
       });
     }
     if(level==='clpe'){
-      // Étiquettes des communes (positionnées par centroïde)
       const centMap={};COM_CENTROIDS.forEach(c=>centMap[c.name]={x:c.x,y:c.y});
       (comByClpe[nav.clpe]||[]).forEach(com=>{
         const ctr=centMap[com.nom];if(!ctr)return;
@@ -921,7 +931,6 @@ async function exportMapPNG(territory){
       });
     }
 
-    // ── En-tête
     ctx.fillStyle='rgba(6,18,32,0.96)';ctx.fillRect(0,0,TOTAL_W,HEADER);
     ctx.strokeStyle='#1e4060';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,HEADER);ctx.lineTo(TOTAL_W,HEADER);ctx.stroke();
@@ -933,18 +942,15 @@ async function exportMapPNG(territory){
     ctx.fillText(levelLabel+' · Comités Locaux Pour l\'Emploi — France',14,42);
     ctx.restore();
 
-    // ── Colonne communes (CLPE uniquement)
     if(showComList&&listCommunes.length){
       ctx.fillStyle='rgba(4,12,22,0.97)';ctx.fillRect(W,0,LIST_COL,TOTAL_H);
       ctx.strokeStyle='#1a3550';ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(W,0);ctx.lineTo(W,TOTAL_H);ctx.stroke();
-      // Titre colonne
       ctx.fillStyle='rgba(10,30,50,0.95)';ctx.fillRect(W,0,LIST_COL,HEADER);
       ctx.beginPath();ctx.moveTo(W,HEADER);ctx.lineTo(W+LIST_COL,HEADER);ctx.stroke();
       ctx.font='bold 9px "Segoe UI",Arial,sans-serif';ctx.fillStyle='#4a7a9a';
       ctx.textAlign='left';ctx.textBaseline='alphabetic';
       ctx.fillText('COMMUNES ('+listCommunes.length+')',W+10,HEADER-10);
-      // Éléments
       const lineH=15,startY=HEADER+13;
       const maxPerCol=Math.floor((H-10)/lineH);
       const cols=listCommunes.length>maxPerCol?2:1;
@@ -972,7 +978,6 @@ async function exportMapPNG(territory){
       }
     }
 
-    // ── Pied de page
     ctx.fillStyle='rgba(4,10,20,0.93)';ctx.fillRect(0,TOTAL_H-FOOTER,TOTAL_W,FOOTER);
     ctx.strokeStyle='#0e2030';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,TOTAL_H-FOOTER);ctx.lineTo(TOTAL_W,TOTAL_H-FOOTER);ctx.stroke();
@@ -980,7 +985,6 @@ async function exportMapPNG(territory){
     const dateStr=new Date().toLocaleDateString('fr-FR',{year:'numeric',month:'long',day:'numeric'});
     ctx.fillText('© OpenStreetMap contributors · CARTO · Export du '+dateStr,10,TOTAL_H-FOOTER/2);
 
-    // ── Téléchargement
     merged.toBlob(blob=>{
       const url=URL.createObjectURL(blob);const a=document.createElement('a');
       a.href=url;a.download='carte_CLPE_'+territory.replace(/[^a-zA-Z0-9\-]/g,'_')+'.png';
@@ -1000,6 +1004,4 @@ function resetView(){
 loadAll().catch(e=>{status.textContent='Erreur : '+e.message;bar.style.background='#c0392b';console.error(e);});
 </script>
 </body>
-  <script data-goatcounter="https://denisft.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
 </html>
