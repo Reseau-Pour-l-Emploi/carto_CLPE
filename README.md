@@ -33,12 +33,13 @@ La carte sera disponible à l'adresse :
 
 ```
 .
-├── index.html          ← Carte Leaflet (HTML + JS)
+├── index.html                      ← Carte Leaflet (HTML + JS)
 ├── data/
-│   ├── reg.json        ← Contours des régions (436 Ko)
-│   ├── dep.json        ← Contours des départements (1 Mo)
-│   ├── clpe.json       ← Contours des CLPE + couleurs (1,9 Mo)
-│   └── com.json        ← Contours des communes, simplifié (11 Mo)
+│   ├── reg.json                    ← Contours des régions (436 Ko)
+│   ├── dep.json                    ← Contours des départements (1 Mo)
+│   ├── clpe.json                   ← Contours des CLPE + couleurs (1,9 Mo)
+│   ├── cle-delimitations.json      ← Contours des CLE TZCLD + couleurs (7,9 Mo)
+│   └── com.json                    ← Contours des communes, simplifié (11 Mo)
 └── README.md
 ```
 
