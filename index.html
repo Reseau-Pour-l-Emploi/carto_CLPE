@@ -20,11 +20,26 @@ select { background:#0d2035; color:#c8dff0; border:1px solid #1e4060; border-rad
 select:hover { border-color:#4a9fd4; }
 select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 
-/* Styles pour le Toggle TZCLD */
-.tzcld-toggle-wrap { display:flex; align-items:center; gap:6px; background:rgba(243,156,18,0.1); border:1px solid rgba(243,156,18,0.4); padding:4px 10px; border-radius:6px; height:29px; cursor:pointer; transition:background 0.2s; }
-.tzcld-toggle-wrap:hover { background:rgba(243,156,18,0.2); }
-.tzcld-toggle-wrap label { font-size:0.7rem; color:#f39c12; font-weight:600; cursor:pointer; text-transform:none; letter-spacing:0; }
-.tzcld-toggle-wrap input { cursor:pointer; }
+/* Styles pour les Toggles */
+.toggle-wrap { display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:6px; height:29px; cursor:pointer; transition:background 0.2s; border:1px solid; }
+.toggle-wrap span { font-size:0.7rem; font-weight:600; cursor:pointer; text-transform:none; letter-spacing:0; }
+.toggle-wrap input { cursor:pointer; }
+
+.toggle-wrap.tzcld { background:rgba(243,156,18,0.1); border-color:rgba(243,156,18,0.4); }
+.toggle-wrap.tzcld:hover { background:rgba(243,156,18,0.2); }
+.toggle-wrap.tzcld span { color:#f39c12; }
+
+.toggle-wrap.epci { background:rgba(128,216,184,0.1); border-color:rgba(128,216,184,0.4); }
+.toggle-wrap.epci:hover { background:rgba(128,216,184,0.2); }
+.toggle-wrap.epci span { color:#80d8b8; }
+
+.toggle-wrap.reg { background:rgba(232,121,176,0.1); border-color:rgba(232,121,176,0.4); }
+.toggle-wrap.reg:hover { background:rgba(232,121,176,0.2); }
+.toggle-wrap.reg span { color:#e879b0; }
+
+.toggle-wrap.dep { background:rgba(232,160,48,0.1); border-color:rgba(232,160,48,0.4); }
+.toggle-wrap.dep:hover { background:rgba(232,160,48,0.2); }
+.toggle-wrap.dep span { color:#e8a030; }
 
 .btn-reset { background:transparent; color:#7ec8f4; border:1px solid #2a5a8c; border-radius:6px; padding:5px 14px; font-size:.76rem; cursor:pointer; transition:background .2s,border-color .2s; white-space:nowrap; }
 .btn-reset:hover { background:#1a3a5c; border-color:#4a9fd4; }
@@ -135,9 +150,22 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
       </select>
     </div>
     <button class="btn-reset" onclick="resetView()">&#8634; Vue d'ensemble</button>
-    <label class="tzcld-toggle-wrap">
-      <input type="checkbox" id="chk-tzcld" onchange="toggleTZCLD(this.checked)">
-      <span>Afficher TZCLD</span>
+    
+    <label class="toggle-wrap reg">
+      <input type="checkbox" id="chk-reg" onchange="toggleReg(this.checked)">
+      <span>Régions</span>
+    </label>
+    <label class="toggle-wrap dep">
+      <input type="checkbox" id="chk-dep" onchange="toggleDep(this.checked)">
+      <span>Départements</span>
+    </label>
+    <label class="toggle-wrap epci">
+      <input type="checkbox" id="chk-epci" onchange="toggleEPCI(this.checked)">
+      <span>EPCI</span>
+    </label>
+    <label class="toggle-wrap tzcld">
+      <input type="checkbox" id="chk-tzcld" onchange="toggleTZCLD(this.checked)" checked>
+      <span>TZCLD</span>
     </label>
   </div>
 </div>
@@ -188,9 +216,10 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
   <div id="legend">
     <h3>Légende</h3>
     <div class="leg-item"><div class="leg-swatch" style="background:linear-gradient(90deg,#1a5276,#2980b9,#1abc9c);opacity:.8;border:1px solid rgba(30,100,160,.4);"></div>Comité Local Pour l'Emploi</div>
-    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#f39c12" stroke-width="2.5" stroke-dasharray="4 3"/></svg></div>Délimitations TZCLD</div>
+    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#f39c12" stroke-width="2.5"/></svg></div>Délimitations TZCLD</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e879b0" stroke-width="2.5"/></svg></div>Région</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#e8a030" stroke-width="1.8"/></svg></div>Département</div>
+    <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#80d8b8" stroke-width="1.5"/></svg></div>EPCI</div>
     <div class="leg-item"><div class="leg-line"><svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="rgba(100,180,240,0.9)" stroke-width="1.3"/></svg></div>Commune</div>
   </div>
 </div>
@@ -202,6 +231,7 @@ const CLPE_NORMAL=p=>({weight:1.0,color:'rgba(20,60,110,0.5)',fillColor:clpeColo
 const CLPE_HOVER =p=>({weight:2.5,color:'#7ec8f4',fillColor:clpeColor(p.color_idx||0),fillOpacity:0.9});
 const DEP_STYLE={weight:2.0,color:'#e8a030',fill:false};
 const REG_STYLE={weight:3.0,color:'#e879b0',fill:false};
+const EPCI_STYLE={weight:1.5,color:'#80d8b8',fill:false,interactive:false};
 
 const REGS_NO_CLPE=new Set([]);
 const DEPS_NO_CLPE=new Set([]);
@@ -219,10 +249,14 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
 
 const comPane=map.createPane('comPane');   comPane.style.zIndex='420';
 const clpePane=map.createPane('clpePane'); clpePane.style.zIndex='430';
+const tzcldPane=map.createPane('tzcldPane'); tzcldPane.style.zIndex='435';
+const epciPane=map.createPane('epciPane'); epciPane.style.zIndex='438';
 const depPane=map.createPane('depPane');   depPane.style.zIndex='440';
 const regPane=map.createPane('regPane');   regPane.style.zIndex='450';
 comPane.style.pointerEvents='none';
 clpePane.style.pointerEvents='auto';
+tzcldPane.style.pointerEvents='none';
+epciPane.style.pointerEvents='none';
 depPane.style.pointerEvents='none';
 regPane.style.pointerEvents='none';
 
@@ -283,9 +317,8 @@ function updateExportBar(){
 }
 
 let REG_DATA,DEP_DATA,CLPE_DATA,COM_DATA,EPCI_DATA;
-// NOUVEAU: Variables pour TZCLD
 let TZCLD_DATA = null;
-let tzcldLayer = null;
+let tzcldLayer = null, depLayer = null, regLayer = null, epciLayer = null;
 
 let allDeps=[],allClpes=[];
 let regToDeps={},depToClpes={},depToRegName={};
@@ -485,7 +518,6 @@ async function loadAll(){
   setProgress(55,'Chargement des EPCI…');
   EPCI_DATA=await fetch('data/epci.geojson').then(r=>r.json()).catch(()=>{console.warn('epci.geojson non disponible');return null;});
   
-  // NOUVEAU: Chargement de TZCLD
   setProgress(65,'Chargement des délimitations TZCLD…');
   try {
     TZCLD_DATA = await fetch('data/cle-delimitations.geojson').then(r=>r.json());
@@ -573,42 +605,62 @@ function buildLayers(){
     }
   }).addTo(map);
 
-  // NOUVEAU: Construction de la couche TZCLD
   if(TZCLD_DATA) {
-    const tzcldPane = map.createPane('tzcldPane');
-    tzcldPane.style.zIndex = '435'; // Au-dessus des CLPE, mais en dessous des départements
-    tzcldPane.style.pointerEvents = 'none'; // 'none' pour ne pas masquer les popups CLPE au survol
-    
     tzcldLayer = L.geoJSON(TZCLD_DATA, {
       pane: 'tzcldPane',
       style: {
         weight: 2.5,
-        color: '#f39c12', // Orange
-        dashArray: '4, 6', // Pointillés
-        fill: false, // Pas de fond pour laisser la carte lisible
+        color: '#f39c12',
+        fill: false, 
         interactive: false
       }
     });
-    // La couche tzcldLayer n'est pas ajoutée à la map par défaut, elle attend le clic sur la checkbox
+    if (document.getElementById('chk-tzcld').checked) { map.addLayer(tzcldLayer); }
   }
 
-  depLayer=L.geoJSON(DEP_DATA,{renderer:L.svg({pane:'depPane'}),pane:'depPane',style:DEP_STYLE,interactive:false}).addTo(map);
-  regLayer=L.geoJSON(REG_DATA,{renderer:L.svg({pane:'regPane'}),pane:'regPane',style:REG_STYLE,interactive:false}).addTo(map);
+  if(EPCI_DATA) {
+    epciLayer = L.geoJSON(EPCI_DATA, {
+      renderer: L.svg({pane:'epciPane'}),
+      pane: 'epciPane',
+      style: EPCI_STYLE,
+      interactive: false
+    });
+    if (document.getElementById('chk-epci').checked) { map.addLayer(epciLayer); }
+  }
+
+  depLayer=L.geoJSON(DEP_DATA,{renderer:L.svg({pane:'depPane'}),pane:'depPane',style:DEP_STYLE,interactive:false});
+  if (document.getElementById('chk-dep').checked) { map.addLayer(depLayer); }
+
+  regLayer=L.geoJSON(REG_DATA,{renderer:L.svg({pane:'regPane'}),pane:'regPane',style:REG_STYLE,interactive:false});
+  if (document.getElementById('chk-reg').checked) { map.addLayer(regLayer); }
+
   buildLabels();
 }
 
-// NOUVEAU: Fonction de bascule pour la couche TZCLD
 function toggleTZCLD(show) {
   if (!tzcldLayer) {
-    alert("Les données des délimitations TZCLD n'ont pas pu être chargées. Vérifiez le fichier data/cle-delimitations.geojson.");
+    alert("Les données des délimitations TZCLD n'ont pas pu être chargées.");
     document.getElementById('chk-tzcld').checked = false;
     return;
   }
-  if (show) {
-    map.addLayer(tzcldLayer);
-  } else {
-    map.removeLayer(tzcldLayer);
+  show ? map.addLayer(tzcldLayer) : map.removeLayer(tzcldLayer);
+}
+
+function toggleEPCI(show) {
+  if (!epciLayer) {
+    if (!EPCI_DATA) alert("Les données des EPCI n'ont pas pu être chargées.");
+    document.getElementById('chk-epci').checked = false;
+    return;
   }
+  show ? map.addLayer(epciLayer) : map.removeLayer(epciLayer);
+}
+
+function toggleDep(show) {
+  if (depLayer) show ? map.addLayer(depLayer) : map.removeLayer(depLayer);
+}
+
+function toggleReg(show) {
+  if (regLayer) show ? map.addLayer(regLayer) : map.removeLayer(regLayer);
 }
 
 function buildLabels(){
@@ -852,8 +904,18 @@ async function exportMapPNG(territory){
 
     const yOff=HEADER;
 
+    // Respect des cases cochées pour l'export national
+    const chkReg = document.getElementById('chk-reg');
+    const chkDep = document.getElementById('chk-dep');
+    const chkEpci = document.getElementById('chk-epci');
+
     if(level==='national'){
-      REG_DATA.features.forEach(f=>renderGeomDirect(ctx,f.geometry,yOff,null,'#e879b0',2.5));
+      if(chkReg && chkReg.checked) {
+        REG_DATA.features.forEach(f=>renderGeomDirect(ctx,f.geometry,yOff,null,'#e879b0',2.5));
+      }
+      if(chkDep && chkDep.checked) {
+        DEP_DATA.features.forEach(f=>renderGeomDirect(ctx,f.geometry,yOff,null,'#e8a030',2.0));
+      }
     }
     if(level==='region'){
       const regName=nav.region;
@@ -878,11 +940,17 @@ async function exportMapPNG(territory){
       if(cFeat)renderGeomDirect(ctx,cFeat.geometry,yOff,null,'#7ec8f4',2.5);
     }
     
-    // NOUVEAU: Rendus des TZCLD sur l'export si la case est cochée
+    // Ajout TZCLD et EPCI à l'export si cochés 
     const chkTzcld = document.getElementById('chk-tzcld');
     if(chkTzcld && chkTzcld.checked && TZCLD_DATA) {
         TZCLD_DATA.features.forEach(f=>{
-            renderGeomDirect(ctx,f.geometry,yOff,null,'#f39c12',2.5, [4, 6]);
+            renderGeomDirect(ctx,f.geometry,yOff,null,'#f39c12',2.5);
+        });
+    }
+
+    if(chkEpci && chkEpci.checked && EPCI_DATA) {
+        EPCI_DATA.features.forEach(f=>{
+            renderGeomDirect(ctx,f.geometry,yOff,null,'#80d8b8',1.5);
         });
     }
 
