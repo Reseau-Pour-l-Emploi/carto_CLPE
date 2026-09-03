@@ -202,9 +202,9 @@ const status=document.getElementById('loading-status');
 function setProgress(pct,msg){bar.style.width=pct+'%';status.textContent=msg;}
 
 const map=L.map('map',{center:[46.5,2.5],zoom:6,preferCanvas:true,zoomSnap:.5,dragging:true,scrollWheelZoom:true,touchZoom:true,doubleClickZoom:false,zoomControl:true});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-  maxZoom:18,opacity:.55,crossOrigin:true
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom:19,opacity:.55,crossOrigin:true
 }).addTo(map);
 
 const comPane=map.createPane('comPane');   comPane.style.zIndex='420';
