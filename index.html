@@ -44,7 +44,7 @@ select:focus { border-color:#4a9fd4; box-shadow:0 0 0 2px rgba(74,159,212,.2); }
 .nav-sep { color:#253c50; font-size:.71rem; }
 .nav-hint { font-size:.64rem; color:#2a4d60; font-style:italic; white-space:nowrap; }
 #map-wrap { flex:1; display:flex; position:relative; overflow:hidden; }
-#map { flex:1; background:#0c1825; cursor:grab; }
+#map { flex:1; background:#0a2540; cursor:grab; }
 #export-panel { width:0; overflow:hidden; background:#071018; border-left:1px solid #192d40; display:flex; flex-direction:column; transition:width .3s cubic-bezier(.4,0,.2,1); flex-shrink:0; }
 #export-panel.open { width:310px; }
 #export-inner { width:310px; display:flex; flex-direction:column; height:100%; }
@@ -201,11 +201,7 @@ const bar=document.getElementById('loading-bar');
 const status=document.getElementById('loading-status');
 function setProgress(pct,msg){bar.style.width=pct+'%';status.textContent=msg;}
 
-const map=L.map('map',{center:[46.5,2.5],zoom:6,preferCanvas:true,zoomSnap:.5,dragging:true,scrollWheelZoom:true,touchZoom:true,doubleClickZoom:false,zoomControl:true});
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  maxZoom:19,opacity:.55,crossOrigin:true
-}).addTo(map);
+const map=L.map('map',{center:[46.5,2.5],zoom:6,preferCanvas:true,zoomSnap:.5,dragging:true,scrollWheelZoom:true,touchZoom:true,doubleClickZoom:false,zoomControl:true,attributionControl:false});
 
 const comPane=map.createPane('comPane');   comPane.style.zIndex='420';
 const clpePane=map.createPane('clpePane'); clpePane.style.zIndex='430';
@@ -516,7 +512,7 @@ async function addWorldMask(){
     const res=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
     const world=await res.json();
     const mask={type:'FeatureCollection',features:world.features.filter(f=>{const iso=(f.properties&&(f.properties.ISO_A3||f.properties.iso_a3))||'';return iso!=='FRA';})};
-    L.geoJSON(mask,{style:{fillColor:'#0c1825',fillOpacity:1,color:'#0c1825',weight:0},interactive:false}).addTo(map);
+    L.geoJSON(mask,{style:{fillColor:'#0a2540',fillOpacity:1,color:'#0a2540',weight:0},interactive:false}).addTo(map);
   }catch(e){console.warn('Masque mondial indisponible:',e);}
 }
 
