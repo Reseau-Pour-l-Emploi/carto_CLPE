@@ -1,4 +1,4 @@
-# Carte des Comités Locaux pour l'Emploi — France
+# Carte des Comités Locaux pour l'Emploi - France
 
 Carte interactive des 362 Comités Locaux pour l'Emploi (CLPE), regroupements de communes sur le territoire français.
 
@@ -9,7 +9,7 @@ Carte interactive des 362 Comités Locaux pour l'Emploi (CLPE), regroupements de
 ```bash
 git init
 git add .
-git commit -m "Initial commit — Carte CLPE"
+git commit -m "Initial commit - Carte CLPE"
 git branch -M main
 git remote add origin https://github.com/<votre-utilisateur>/<votre-repo>.git
 git push -u origin main
